@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.alexander.paxmentis.data.UserPreferences
 import com.alexander.paxmentis.ui.viewmodels.PanicViewModel
 import kotlinx.coroutines.delay
 import java.util.Locale
@@ -23,6 +24,7 @@ import java.util.Locale
 @Composable
 fun PanicScreen(
     hasCallPermission: Boolean,
+    userPreferences: UserPreferences,
     viewModel: PanicViewModel = hiltViewModel()
 ) {
     var step by remember { mutableIntStateOf(0) }
@@ -30,6 +32,7 @@ fun PanicScreen(
     val context = LocalContext.current
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
+    val speechRate by userPreferences.speechRateFlow.collectAsState()
     
     val tts = remember { mutableStateOf<TextToSpeech?>(null) }
     val steps = listOf(
@@ -44,12 +47,17 @@ fun PanicScreen(
         tts.value = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts.value?.language = Locale.GERMAN
+                tts.value?.setSpeechRate(speechRate)
             }
         }
         onDispose {
             tts.value?.stop()
             tts.value?.shutdown()
         }
+    }
+
+    LaunchedEffect(speechRate) {
+        tts.value?.setSpeechRate(speechRate)
     }
 
     LaunchedEffect(step) {

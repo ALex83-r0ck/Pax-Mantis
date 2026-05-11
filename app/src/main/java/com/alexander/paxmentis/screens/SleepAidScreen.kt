@@ -27,18 +27,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alexander.paxmentis.R
+import com.alexander.paxmentis.data.UserPreferences
+import kotlin.random.Random
 import kotlinx.coroutines.delay
 import java.util.Locale
-import kotlin.random.Random
 
 @Composable
-fun SleepAidScreen() {
+fun SleepAidScreen(
+    userPreferences: UserPreferences
+) {
     var isMeditating by remember { mutableStateOf(false) }
     var isPlayingMusic by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val mediaPlayer = remember { mutableStateOf<MediaPlayer?>(null) }
     val tts = remember { mutableStateOf<TextToSpeech?>(null) }
     val starAlpha = remember { Animatable(0f) }
+    val speechRate by userPreferences.speechRateFlow.collectAsState()
 
     val affirmations = listOf(
         "Du bist sicher. Du bist nicht allein.",
@@ -54,7 +58,7 @@ fun SleepAidScreen() {
         tts.value = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts.value?.language = Locale.GERMAN
-                tts.value?.setSpeechRate(0.65f)
+                tts.value?.setSpeechRate(speechRate * 0.65f) // Relativ (Basis 0.65f)
                 tts.value?.setPitch(0.8f)
             }
         }
@@ -62,6 +66,10 @@ fun SleepAidScreen() {
             tts.value?.stop()
             tts.value?.shutdown()
         }
+    }
+
+    LaunchedEffect(speechRate) {
+        tts.value?.setSpeechRate(speechRate * 0.65f)
     }
 
     DisposableEffect(Unit) {

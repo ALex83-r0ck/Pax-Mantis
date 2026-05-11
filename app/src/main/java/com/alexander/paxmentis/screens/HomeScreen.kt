@@ -153,6 +153,22 @@ fun HomeScreen(
             )
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Row 4: Psychoedukation
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            QuickActionButton(
+                label = "Wissens-Hub",
+                description = "Psychoedukation & Verständnis",
+                icon = Icons.Default.MenuBook,
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                onClick = { navController.navigate("education") }
+            )
+            // Empty space or another button
+            Spacer(modifier = Modifier.weight(1f))
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
         // Footer Button

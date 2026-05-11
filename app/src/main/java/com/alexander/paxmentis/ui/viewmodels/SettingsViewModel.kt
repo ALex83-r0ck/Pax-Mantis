@@ -14,6 +14,7 @@ class SettingsViewModel @Inject constructor(
     val nickname: StateFlow<String> = userPreferences.nicknameFlow
     val emergencyContact: StateFlow<String> = userPreferences.emergencyContactFlow
     val emergencyNumber: StateFlow<String> = userPreferences.emergencyNumberFlow
+    val speechRate: StateFlow<Float> = userPreferences.speechRateFlow
 
     fun setNickname(name: String) {
         userPreferences.setNickname(name)
@@ -25,5 +26,9 @@ class SettingsViewModel @Inject constructor(
 
     fun setEmergencyNumber(number: String) {
         userPreferences.setEmergencyNumber(number)
+    }
+
+    fun setSpeechRate(rate: Float) {
+        userPreferences.setSpeechRate(rate)
     }
 }

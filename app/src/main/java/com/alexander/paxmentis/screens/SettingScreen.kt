@@ -25,6 +25,7 @@ fun SettingsScreen(
     val nickname by viewModel.nickname.collectAsState()
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
+    val speechRate by viewModel.speechRate.collectAsState()
 
     Column(
         modifier = Modifier
@@ -48,6 +49,34 @@ fun SettingsScreen(
                     onValueChange = { viewModel.setNickname(it) },
                     label = { Text("Dein Name / Spitzname") },
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // Sprachausgabe-Einstellungen
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Sprachausgabe", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                
+                Text(
+                    text = "Sprachgeschwindigkeit: ${"%.1f".format(speechRate)}x",
+                    fontSize = 16.sp
+                )
+                
+                Slider(
+                    value = speechRate,
+                    onValueChange = { viewModel.setSpeechRate(it) },
+                    valueRange = 0.5f..2.0f,
+                    steps = 14 // 0.1 increments
+                )
+                
+                Text(
+                    "Bestimmt, wie schnell die App Anleitungen vorliest.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                 )
             }
         }

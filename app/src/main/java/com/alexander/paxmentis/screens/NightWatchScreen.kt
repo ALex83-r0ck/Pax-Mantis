@@ -18,12 +18,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.alexander.paxmentis.data.UserPreferences
 import java.util.*
 
 @Composable
-fun NightWatchScreen() {
+fun NightWatchScreen(
+    userPreferences: UserPreferences
+) {
     val context = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    val speechRate by userPreferences.speechRateFlow.collectAsState()
     
     val pulse = rememberInfiniteTransition()
     val glow by pulse.animateFloat(
@@ -39,7 +43,7 @@ fun NightWatchScreen() {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(0.5f) // Extrem langsam
+                tts?.setSpeechRate(speechRate * 0.5f) // Relativ langsam (Basis 0.5f)
                 tts?.setPitch(0.7f) // Sehr tief/beruhigend
             }
         }
@@ -47,6 +51,10 @@ fun NightWatchScreen() {
             tts?.stop()
             tts?.shutdown()
         }
+    }
+
+    LaunchedEffect(speechRate) {
+        tts?.setSpeechRate(speechRate * 0.5f)
     }
 
     Box(

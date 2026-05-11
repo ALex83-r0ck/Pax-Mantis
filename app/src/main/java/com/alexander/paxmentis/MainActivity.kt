@@ -18,15 +18,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.*
+import com.alexander.paxmentis.data.UserPreferences
 import com.alexander.paxmentis.screens.*
 import com.alexander.paxmentis.security.BiometricPromptManager
 import com.alexander.paxmentis.ui.theme.PaxMentisTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    @Inject
+    lateinit var userPreferences: UserPreferences
+
     private var hasCallPermission by mutableStateOf(false)
     private var isUnlocked by mutableStateOf(false)
 
@@ -48,7 +53,7 @@ class MainActivity : AppCompatActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (isUnlocked) {
-                        AppNavigation(hasCallPermission)
+                        AppNavigation(hasCallPermission, userPreferences)
                     } else {
                         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer))
                         
@@ -87,7 +92,7 @@ class MainActivity : AppCompatActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(hasCallPermission: Boolean) {
+fun AppNavigation(hasCallPermission: Boolean, userPreferences: UserPreferences) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -188,6 +193,18 @@ fun AppNavigation(hasCallPermission: Boolean) {
                         scope.launch { drawerState.close() }
                     }
                 )
+                NavigationItem(
+                    icon = Icons.Default.MenuBook,
+                    label = "Wissens-Hub",
+                    isSelected = currentRoute == "education",
+                    onClick = {
+                        navController.navigate("education") {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                        scope.launch { drawerState.close() }
+                    }
+                )
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -231,17 +248,18 @@ fun AppNavigation(hasCallPermission: Boolean) {
                 composable("crisis_compass") { CrisisCompassScreen(navController) }
                 composable("neutral_messaging") { NeutralMessagingScreen() }
                 composable("shared_reality") { SharedRealityScreen() }
-                composable("panic") { PanicScreen(hasCallPermission) }
-                composable("grounding_54321") { GroundingScreen() }
+                composable("panic") { PanicScreen(hasCallPermission, userPreferences) }
+                composable("grounding_54321") { GroundingScreen(userPreferences) }
                 composable("depression_help") { DepressionHelpScreen() }
-                composable("safe_space") { SafeSpaceScreen() }
-                composable("breathing") { BreathingScreen() }
-                composable("worry_chair") { WorryChairScreen() }
-                composable("sleep_aid") { SleepAidScreen() }
+                composable("safe_space") { SafeSpaceScreen(userPreferences) }
+                composable("breathing") { BreathingScreen(userPreferences) }
+                composable("worry_chair") { WorryChairScreen(userPreferences) }
+                composable("sleep_aid") { SleepAidScreen(userPreferences) }
                 composable("settings") { SettingsScreen() }
+                composable("education") { EducationScreen() }
                 composable("ambivalence") { AmbivalenceScreen() }
                 composable("trigger_block") { TriggerBlockScreen(onNavigateBack = { navController.popBackStack() }) }
-                composable("night_watch") { NightWatchScreen() }
+                composable("night_watch") { NightWatchScreen(userPreferences) }
             }
         }
     }

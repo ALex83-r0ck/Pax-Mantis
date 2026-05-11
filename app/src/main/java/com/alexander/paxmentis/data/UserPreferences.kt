@@ -25,6 +25,9 @@ class UserPreferences @Inject constructor(
     private val _emergencyNumber = MutableStateFlow(getEmergencyNumber())
     val emergencyNumberFlow: StateFlow<String> = _emergencyNumber.asStateFlow()
 
+    private val _speechRate = MutableStateFlow(getSpeechRate())
+    val speechRateFlow: StateFlow<Float> = _speechRate.asStateFlow()
+
     fun getNickname(): String {
         return sharedPreferences.getString("nickname", "Mäusel") ?: "Mäusel"
     }
@@ -50,5 +53,14 @@ class UserPreferences @Inject constructor(
     fun setEmergencyNumber(number: String) {
         sharedPreferences.edit().putString("emergency_number", number).apply()
         _emergencyNumber.value = number
+    }
+
+    fun getSpeechRate(): Float {
+        return sharedPreferences.getFloat("speech_rate", 1.0f)
+    }
+
+    fun setSpeechRate(rate: Float) {
+        sharedPreferences.edit().putFloat("speech_rate", rate).apply()
+        _speechRate.value = rate
     }
 }

@@ -16,13 +16,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.alexander.paxmentis.data.UserPreferences
 import java.util.Locale
 
 @Composable
-fun GroundingScreen() {
+fun GroundingScreen(
+    userPreferences: UserPreferences
+) {
     var step by remember { mutableIntStateOf(5) }
     val context = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    val speechRate by userPreferences.speechRateFlow.collectAsState()
 
     val instructions = mapOf(
         5 to "Nenne 5 Dinge, die du gerade SIEHST.",
@@ -44,7 +48,7 @@ fun GroundingScreen() {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(0.75f)
+                tts?.setSpeechRate(speechRate)
                 tts?.setPitch(0.9f)
                 tts?.speak(instructions[5], TextToSpeech.QUEUE_FLUSH, null, null)
             }
@@ -53,6 +57,10 @@ fun GroundingScreen() {
             tts?.stop()
             tts?.shutdown()
         }
+    }
+
+    LaunchedEffect(speechRate) {
+        tts?.setSpeechRate(speechRate)
     }
 
     LaunchedEffect(step) {

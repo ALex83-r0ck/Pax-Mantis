@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.alexander.paxmentis.data.UserPreferences
 import com.alexander.paxmentis.data.WorryEntry
 import com.alexander.paxmentis.ui.viewmodels.WorryChairViewModel
 import java.text.SimpleDateFormat
@@ -30,6 +31,7 @@ import java.util.*
 
 @Composable
 fun WorryChairScreen(
+    userPreferences: UserPreferences,
     viewModel: WorryChairViewModel = hiltViewModel()
 ) {
     var worry by remember { mutableStateOf("") }
@@ -44,12 +46,12 @@ fun WorryChairScreen(
     var editEntry by remember { mutableStateOf<WorryEntry?>(null) }
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     var isRecordingMode by remember { mutableStateOf(false) }
+    val speechRate by userPreferences.speechRateFlow.collectAsState()
 
     DisposableEffect(Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(0.8f)
                 tts?.setPitch(0.9f)
             }
         }
@@ -57,6 +59,10 @@ fun WorryChairScreen(
             tts?.stop()
             tts?.shutdown()
         }
+    }
+
+    LaunchedEffect(speechRate) {
+        tts?.setSpeechRate(speechRate * 0.8f)
     }
 
     Box(

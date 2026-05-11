@@ -20,13 +20,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.alexander.paxmentis.data.UserPreferences
 import java.util.Locale
 
 @Composable
-fun SafeSpaceScreen() {
+fun SafeSpaceScreen(
+    userPreferences: UserPreferences
+) {
     val context = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     var isStarted by remember { mutableStateOf(false) }
+    val speechRate by userPreferences.speechRateFlow.collectAsState()
 
     val pulse = rememberInfiniteTransition()
     val alpha by pulse.animateFloat(
@@ -44,7 +48,7 @@ fun SafeSpaceScreen() {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(0.7f)
+                tts?.setSpeechRate(speechRate * 0.7f) // Relativ (Basis 0.7f)
                 tts?.setPitch(0.85f)
             }
         }
@@ -52,6 +56,10 @@ fun SafeSpaceScreen() {
             tts?.stop()
             tts?.shutdown()
         }
+    }
+
+    LaunchedEffect(speechRate) {
+        tts?.setSpeechRate(speechRate * 0.7f)
     }
 
     Box(

@@ -24,11 +24,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.alexander.paxmentis.data.UserPreferences
 import kotlinx.coroutines.delay
 import java.util.Locale
 
 @Composable
-fun BreathingScreen() {
+fun BreathingScreen(
+    userPreferences: UserPreferences
+) {
     var isAnimating by remember { mutableStateOf(false) }
     var currentPhase by remember { mutableStateOf("Bereit?") }
     var inhaleTime by remember { mutableFloatStateOf(4f) }
@@ -40,6 +43,7 @@ fun BreathingScreen() {
     val scale = remember { Animatable(1f) }
     val context = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    val speechRate by userPreferences.speechRateFlow.collectAsState()
 
     val vibrator = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -55,12 +59,17 @@ fun BreathingScreen() {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.GERMAN
+                tts?.setSpeechRate(speechRate)
             }
         }
         onDispose {
             tts?.stop()
             tts?.shutdown()
         }
+    }
+
+    LaunchedEffect(speechRate) {
+        tts?.setSpeechRate(speechRate)
     }
 
     LaunchedEffect(isAnimating) {
