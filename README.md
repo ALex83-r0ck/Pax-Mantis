@@ -39,3 +39,8 @@ Ein intelligentes Modul, das auf Knopfdruck spezialisierte Hilfe bietet:
 
 ---
 *Hinweis: PaxMentis ist ein unterstützendes Werkzeug und ersetzt keine professionelle psychotherapeutische oder ärztliche Behandlung. In akuten Notfällen wenden Sie sich bitte immer an den ärztlichen Bereitschaftsdienst (116117) oder den Notruf (112). Zudem ist es noch nicht ausgereift und unterliegt ständiger Überarbeitung und Optimierung.*
+
+<img width="379" height="631" alt="image" src="https://github.com/user-attachments/assets/94029ca6-294f-46ec-910e-bce975880166" />
+<img width="299" height="588" alt="image" src="https://github.com/user-attachments/assets/d5baac71-ceb9-4d2d-a2a2-d93b356d6e55" />
+
+
