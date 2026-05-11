@@ -1,237 +1,233 @@
 package com.alexander.paxmentis.screens
 
+import android.speech.tts.TextToSpeech
 import android.widget.Toast
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.alexander.paxmentis.data.PaxMentisDatabase
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.alexander.paxmentis.data.WorryEntry
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import com.alexander.paxmentis.ui.viewmodels.WorryChairViewModel
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 @Composable
-fun WorryChairScreen() {
+fun WorryChairScreen(
+    viewModel: WorryChairViewModel = hiltViewModel()
+) {
     var worry by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
     var worstCase by remember { mutableStateOf("") }
     var solution by remember { mutableStateOf("") }
-    var entries by remember { mutableStateOf<List<WorryEntry>>(emptyList()) }
-    val coroutineScope = rememberCoroutineScope()
+    
+    val entries by viewModel.entries.collectAsState()
+    val nickname by viewModel.nickname.collectAsState()
     val context = LocalContext.current
+    
     var editEntry by remember { mutableStateOf<WorryEntry?>(null) }
-    var editWorry by remember { mutableStateOf("") }
-    var editReason by remember { mutableStateOf("") }
-    var editWorstCase by remember { mutableStateOf("") }
-    var editSolution by remember { mutableStateOf("") }
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    var isRecordingMode by remember { mutableStateOf(false) }
 
-    // Nutze die Singleton-Instanz der Datenbank
-    val db = PaxMentisDatabase.getInstance(context)
-
-    // Lade Einträge aus der Datenbank
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            db.worryEntryDao().getAll().collectLatest { entries = it }
+    DisposableEffect(Unit) {
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale.GERMAN
+                tts?.setSpeechRate(0.8f)
+                tts?.setPitch(0.9f)
+            }
+        }
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
         }
     }
 
-    LazyColumn(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                    )
+                )
+            )
     ) {
-        // Titel
-        item {
-            Text(
-                text = "Sorgenstuhl",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-        // Eingabefeld: Sorge
-        item {
-            Text(text = "Was raubt Dir deinen Schlaf?", fontSize = 18.sp)
-            TextField(
-                value = worry,
-                onValueChange = { worry = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium),
-                placeholder = { Text("Deine Sorge eingeben") }
-            )
-        }
-        // Eingabefeld: Grund
-        item {
-            Text(text = "Was denkst du warum Du diese Sorge/Angst hast?", fontSize = 18.sp)
-            TextField(
-                value = reason,
-                onValueChange = { reason = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium),
-                placeholder = { Text("Grund eingeben") }
-            )
-        }
-        // Eingabefeld: Schlimmstes Szenario
-        item {
-            Text(text = "Was meinst du was das schlimmste ist was passieren kann?", fontSize = 18.sp)
-            TextField(
-                value = worstCase,
-                onValueChange = { worstCase = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium),
-                placeholder = { Text("Schlimmstes Szenario eingeben") }
-            )
-        }
-        // Eingabefeld: Lösung
-        item {
-            Text(text = "Was wäre eine mögliche Antwort darauf? Was kannst Du dagegen aktiv tun?", fontSize = 18.sp)
-            TextField(
-                value = solution,
-                onValueChange = { solution = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, shape = MaterialTheme.shapes.medium),
-                placeholder = { Text("Lösung eingeben") }
-            )
-        }
-        // Speichern-Button
-        item {
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        if (worry.isNotBlank()) {
-                            try {
-                                val newEntry = WorryEntry(
-                                    date = System.currentTimeMillis(),
-                                    worry = worry,
-                                    reason = reason.ifEmpty { null },
-                                    worstCase = worstCase.ifEmpty { null },
-                                    solution = solution.ifEmpty { null }
-                                )
-                                db.worryEntryDao().insert(newEntry)
-                                worry = ""
-                                reason = ""
-                                worstCase = ""
-                                solution = ""
-                                Toast.makeText(context, "Eintrag gespeichert!", Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Fehler beim Speichern: ${e.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            Toast.makeText(context, "Bitte gib eine Sorge ein!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "Speichern", fontSize = 18.sp)
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .imePadding(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Text(
+                    text = "Dein Sorgenstuhl",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Ein Ort, um Gedanken abzuladen und Klarheit zu finden.",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
+                ) {
+                    Text(
+                        "Schreibe auf, was dich belastet. Wir schauen es uns gemeinsam an, Schritt für Schritt.",
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = 14.sp,
+                        fontStyle = FontStyle.Italic
+                    )
+                }
             }
-        }
-        // Historie-Überschrift
-        item {
-            Text(
-                text = "Deine kleine Geschichte",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-            )
-        }
-        // Historie-Einträge mit CRUD
-        items(entries) { entry ->
-            WorryEntryCard(entry, db) { selectedEntry ->
-                editEntry = selectedEntry
-                editWorry = selectedEntry.worry!!
-                editReason = selectedEntry.reason ?: ""
-                editWorstCase = selectedEntry.worstCase ?: ""
-                editSolution = selectedEntry.solution ?: ""
+
+            item {
+                WorryInputSection(
+                    label = "Was belastet dich gerade?",
+                    value = worry,
+                    onValueChange = { worry = it },
+                    placeholder = "Lass es hier raus...",
+                    onHelpClick = { tts?.speak("Atme tief durch. Was genau macht dir gerade Sorgen?", TextToSpeech.QUEUE_FLUSH, null, null) }
+                )
+            }
+
+            item {
+                WorryInputSection(
+                    label = "Warum ist dieser Gedanke da?",
+                    value = reason,
+                    onValueChange = { reason = it },
+                    placeholder = "Gibt es einen Auslöser?",
+                    onHelpClick = { tts?.speak("Versuche den Ursprung zu finden. Gab es eine bestimmte Situation?", TextToSpeech.QUEUE_FLUSH, null, null) }
+                )
+            }
+
+            item {
+                WorryInputSection(
+                    label = "Worst Case Szenario?",
+                    value = worstCase,
+                    onValueChange = { worstCase = it },
+                    placeholder = "Was wäre das Schlimmste?",
+                    onHelpClick = { tts?.speak("Oft ist das schlimmste Szenario weniger bedrohlich, wenn wir es aussprechen.", TextToSpeech.QUEUE_FLUSH, null, null) }
+                )
+            }
+
+            item {
+                WorryInputSection(
+                    label = "Was würde dir jetzt helfen?",
+                    value = solution,
+                    onValueChange = { solution = it },
+                    placeholder = "Eine kleine Lösung...",
+                    onHelpClick = { tts?.speak("Denk an eine winzige Sache, die jetzt gut tun würde.", TextToSpeech.QUEUE_FLUSH, null, null) }
+                )
+            }
+
+            item {
+                Button(
+                    onClick = {
+                        if (worry.isNotBlank()) {
+                            viewModel.addEntry(
+                                worry = worry,
+                                reason = reason.ifEmpty { null },
+                                worstCase = worstCase.ifEmpty { null },
+                                solution = solution.ifEmpty { null }
+                            )
+                            worry = ""
+                            reason = ""
+                            worstCase = ""
+                            solution = ""
+                            tts?.speak("Danke, dass du das geteilt hast. Du hast es hier abgelegt.", TextToSpeech.QUEUE_FLUSH, null, null)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.CloudDone, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Gedanken ablegen", fontSize = 18.sp)
+                }
+            }
+
+            item {
+                Text(
+                    text = "Vergangene Gedanken",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+            }
+
+            items(entries) { entry ->
+                WorryEntryCard(
+                    entry = entry,
+                    onDelete = { viewModel.deleteEntry(it) },
+                    onEdit = { editEntry = it }
+                )
             }
         }
     }
 
-    // Bearbeitungs-Dialog
     if (editEntry != null) {
-        AlertDialog(
-            onDismissRequest = { editEntry = null },
-            title = { Text("Eintrag bearbeiten") },
-            text = {
-                Column {
-                    TextField(
-                        value = editWorry,
-                        onValueChange = { editWorry = it },
-                        label = { Text("Sorge") }
-                    )
-                    TextField(
-                        value = editReason,
-                        onValueChange = { editReason = it },
-                        label = { Text("Grund") }
-                    )
-                    TextField(
-                        value = editWorstCase,
-                        onValueChange = { editWorstCase = it },
-                        label = { Text("Schlimmstes Szenario") }
-                    )
-                    TextField(
-                        value = editSolution,
-                        onValueChange = { editSolution = it },
-                        label = { Text("Lösung") }
-                    )
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    coroutineScope.launch {
-                        editEntry?.let { entry ->
-                            val updatedEntry = entry.copy(
-                                worry = editWorry,
-                                reason = editReason.ifEmpty { null },
-                                worstCase = editWorstCase.ifEmpty { null },
-                                solution = editSolution.ifEmpty { null }
-                            )
-                            db.worryEntryDao().update(updatedEntry)
-                            editEntry = null
-                            Toast.makeText(context, "Eintrag aktualisiert!", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }) {
-                    Text("Speichern")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { editEntry = null }) {
-                    Text("Abbrechen")
-                }
+        EditWorryDialog(
+            entry = editEntry!!,
+            onDismiss = { editEntry = null },
+            onConfirm = { updated ->
+                viewModel.updateEntry(updated)
+                editEntry = null
             }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WorryInputSection(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    onHelpClick: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            IconButton(onClick = onHelpClick) {
+                Icon(Icons.Default.HelpOutline, contentDescription = "Hilfe", tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(placeholder) },
+            shape = RoundedCornerShape(12.dp)
         )
     }
 }
@@ -239,45 +235,76 @@ fun WorryChairScreen() {
 @Composable
 fun WorryEntryCard(
     entry: WorryEntry,
-    db: PaxMentisDatabase,
+    onDelete: (WorryEntry) -> Unit,
     onEdit: (WorryEntry) -> Unit
 ) {
-    val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+    val dateFormat = remember { SimpleDateFormat("dd. MMMM yyyy", Locale.GERMAN) }
     val formattedDate = dateFormat.format(Date(entry.date))
-    val localScope = rememberCoroutineScope() // Lokaler Coroutine-Scope
+    
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(text = "Datum: $formattedDate", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-            Text(text = "Sorge: ${entry.worry}", fontSize = 16.sp)
-            Text(text = "Grund: ${entry.reason}", fontSize = 16.sp)
-            Text(text = "Schlimmstes Szenario: ${entry.worstCase}", fontSize = 16.sp)
-            Text(text = "Lösung: ${entry.solution}", fontSize = 16.sp)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Button(onClick = {
-                    localScope.launch {
-                        db.worryEntryDao().delete(entry)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(text = formattedDate, fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
+                Row {
+                    IconButton(onClick = { onEdit(entry) }, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
                     }
-                }) {
-                    Text("Löschen")
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = { onDelete(entry) }, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                    }
                 }
-                Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                Button(onClick = { onEdit(entry) }) {
-                    Text("Bearbeiten")
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(text = entry.worry ?: "", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            if (!entry.solution.isNullOrBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Lightbulb, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(4.dp))
+                    Text(text = entry.solution!!, fontSize = 14.sp, fontStyle = FontStyle.Italic)
                 }
             }
         }
     }
 }
 
+@Composable
+fun EditWorryDialog(
+    entry: WorryEntry,
+    onDismiss: () -> Unit,
+    onConfirm: (WorryEntry) -> Unit
+) {
+    var worry by remember { mutableStateOf(entry.worry ?: "") }
+    var reason by remember { mutableStateOf(entry.reason ?: "") }
+    var worstCase by remember { mutableStateOf(entry.worstCase ?: "") }
+    var solution by remember { mutableStateOf(entry.solution ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Gedanken bearbeiten") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(value = worry, onValueChange = { worry = it }, label = { Text("Sorge") })
+                OutlinedTextField(value = reason, onValueChange = { reason = it }, label = { Text("Grund") })
+                OutlinedTextField(value = worstCase, onValueChange = { worstCase = it }, label = { Text("Worst Case") })
+                OutlinedTextField(value = solution, onValueChange = { solution = it }, label = { Text("Lösung") })
+            }
+        },
+        confirmButton = {
+            Button(onClick = { 
+                onConfirm(entry.copy(worry = worry, reason = reason, worstCase = worstCase, solution = solution))
+            }) { Text("Speichern") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Abbrechen") }
+        }
+    )
+}

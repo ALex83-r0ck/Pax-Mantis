@@ -1,76 +1,60 @@
 package com.alexander.paxmentis.screens
 
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
 fun BreathingScreen() {
     var isAnimating by remember { mutableStateOf(false) }
-    var currentPhase by remember { mutableStateOf("Atem-Übung starten") }
-    var inhaleTime by remember { mutableFloatStateOf(6f) }
+    var currentPhase by remember { mutableStateOf("Bereit?") }
+    var inhaleTime by remember { mutableFloatStateOf(4f) }
     var holdTime by remember { mutableFloatStateOf(4f) }
-    var exhaleTime by remember { mutableFloatStateOf(8f) }
+    var exhaleTime by remember { mutableFloatStateOf(4f) }
     var useTTS by remember { mutableStateOf(true) }
+    var useHaptics by remember { mutableStateOf(true) }
     var showSettings by remember { mutableStateOf(false) }
     val scale = remember { Animatable(1f) }
     val context = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    val scope = rememberCoroutineScope()
 
-    // Initialisiere Text-to-Speech mit Stimmenauswahl (falls verfügbar)
+    val vibrator = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = context.getSystemService(VibratorManager::class.java)
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Vibrator::class.java)
+        }
+    }
+
     DisposableEffect(Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(1.0f) // Normale Geschwindigkeit
-                tts?.setPitch(.95f) // Normale Tonlage
-                // Versuche, eine andere Stimme zu setzen (abhängig vom Gerät)
-                tts?.voices?.firstOrNull { it.name.contains("female", ignoreCase = true) }?.let { voice ->
-                    tts?.voice = voice
-                }
             }
         }
         onDispose {
@@ -79,41 +63,51 @@ fun BreathingScreen() {
         }
     }
 
-    // Phasensteuerung mit Countdown
     LaunchedEffect(isAnimating) {
         if (isAnimating) {
-            // Countdown (3-2-1)
-            currentPhase = "3"
-            if (useTTS && tts?.isSpeaking == false) tts?.speak("Drei", TextToSpeech.QUEUE_FLUSH, null, null)
-            delay(1000L)
-            currentPhase = "2"
-            if (useTTS && tts?.isSpeaking == false) tts?.speak("Zwei", TextToSpeech.QUEUE_FLUSH, null, null)
-            delay(1000L)
-            currentPhase = "1"
-            if (useTTS && tts?.isSpeaking == false) tts?.speak("Eins", TextToSpeech.QUEUE_FLUSH, null, null)
-            delay(1000L)
-
             while (isAnimating) {
                 // Einatmen
                 currentPhase = "Einatmen"
-                if (useTTS && tts?.isSpeaking == false) tts?.speak("Einatmen", TextToSpeech.QUEUE_FLUSH, null, null)
-                scope.launch { scale.animateTo(1.5f, animationSpec = tween((inhaleTime * 1000).toInt(), easing = LinearEasing)) }
-                delay((inhaleTime * 1000 / 2).toLong()) // Halbiertes Delay für besseres Timing
+                if (useTTS) tts?.speak("Einatmen", TextToSpeech.QUEUE_FLUSH, null, null)
+                if (useHaptics) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(100)
+                    }
+                }
+                
+                scale.animateTo(
+                    targetValue = 1.5f,
+                    animationSpec = tween((inhaleTime * 1000).toInt(), easing = LinearEasing)
+                )
 
                 // Halten
                 currentPhase = "Halten"
-                if (useTTS && tts?.isSpeaking == false) tts?.speak("Halten", TextToSpeech.QUEUE_FLUSH, null, null)
-                delay((holdTime * 1000 / 2).toLong())
+                if (useTTS) tts?.speak("Halten", TextToSpeech.QUEUE_FLUSH, null, null)
+                delay((holdTime * 1000).toLong())
 
                 // Ausatmen
                 currentPhase = "Ausatmen"
-                if (useTTS && tts?.isSpeaking == false) tts?.speak("Ausatmen", TextToSpeech.QUEUE_FLUSH, null, null)
-                scope.launch { scale.animateTo(1f, animationSpec = tween((exhaleTime * 1000).toInt(), easing = LinearEasing)) }
-                delay((exhaleTime * 1000 / 2).toLong())
+                if (useTTS) tts?.speak("Ausatmen", TextToSpeech.QUEUE_FLUSH, null, null)
+                if (useHaptics) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(100)
+                    }
+                }
+                
+                scale.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween((exhaleTime * 1000).toInt(), easing = LinearEasing)
+                )
             }
-            // Zurücksetzen bei Stop
-            scope.launch { scale.animateTo(1f, animationSpec = tween(1000, easing = LinearEasing)) }
-            currentPhase = "Atem-Übung starten"
+        } else {
+            scale.snapTo(1f)
+            currentPhase = "Bereit?"
         }
     }
 
@@ -124,7 +118,7 @@ fun BreathingScreen() {
                 Brush.verticalGradient(
                     colors = listOf(
                         MaterialTheme.colorScheme.background,
-                        Color(0xFFE6F0FA)
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     )
                 )
             ),
@@ -132,19 +126,18 @@ fun BreathingScreen() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.Center
         ) {
-            // Animierte Bubble
             Box(
                 modifier = Modifier
-                    .size(300.dp)
-                    .clip(CircleShape)
+                    .size(240.dp)
                     .scale(scale.value)
+                    .clip(CircleShape)
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                             )
                         )
                     ),
@@ -152,66 +145,54 @@ fun BreathingScreen() {
             ) {
                 Text(
                     text = currentPhase,
-                    fontSize = 23.sp,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    textAlign = TextAlign.Center
                 )
             }
 
-            // Klappbares Einstellungsmenü
-            Button(onClick = { showSettings = !showSettings }) {
-                Text(if (showSettings) "Einstellungen ausblenden" else "Einstellungen anzeigen")
-            }
-            AnimatedVisibility(
-                visible = showSettings,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Einatmen: ${inhaleTime.toInt()}s", fontSize = 16.sp)
-                    Slider(
-                        value = inhaleTime,
-                        onValueChange = { inhaleTime = it },
-                        valueRange = 2f..10f,
-                        steps = 7
-                    )
-                    Text("Halten: ${holdTime.toInt()}s", fontSize = 16.sp)
-                    Slider(
-                        value = holdTime,
-                        onValueChange = { holdTime = it },
-                        valueRange = 2f..10f,
-                        steps = 7
-                    )
-                    Text("Ausatmen: ${exhaleTime.toInt()}s", fontSize = 16.sp)
-                    Slider(
-                        value = exhaleTime,
-                        onValueChange = { exhaleTime = it },
-                        valueRange = 2f..10f,
-                        steps = 7
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("TTS Ansagen", fontSize = 16.sp)
-                        Switch(checked = useTTS, onCheckedChange = { useTTS = it })
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(48.dp))
 
-            // Start/Stop-Button
             Button(
                 onClick = { isAnimating = !isAnimating },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text(
-                    text = if (isAnimating) "Stop" else "Start",
-                    fontSize = 18.sp
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isAnimating) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                 )
+            ) {
+                Text(if (isAnimating) "Stop" else "Start", fontSize = 20.sp)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(onClick = { showSettings = !showSettings }) {
+                Text(if (showSettings) "Einstellungen ausblenden" else "Einstellungen anpassen")
+            }
+
+            AnimatedVisibility(visible = showSettings) {
+                Card(
+                    modifier = Modifier.padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Einatmen: ${inhaleTime.toInt()}s")
+                        Slider(value = inhaleTime, onValueChange = { inhaleTime = it }, valueRange = 2f..10f)
+                        
+                        Text("Halten: ${holdTime.toInt()}s")
+                        Slider(value = holdTime, onValueChange = { holdTime = it }, valueRange = 0f..10f)
+                        
+                        Text("Ausatmen: ${exhaleTime.toInt()}s")
+                        Slider(value = exhaleTime, onValueChange = { exhaleTime = it }, valueRange = 2f..10f)
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = useTTS, onCheckedChange = { useTTS = it })
+                            Text("Sprachausgabe")
+                            Spacer(Modifier.width(16.dp))
+                            Checkbox(checked = useHaptics, onCheckedChange = { useHaptics = it })
+                            Text("Vibration")
+                        }
+                    }
+                }
             }
         }
     }
