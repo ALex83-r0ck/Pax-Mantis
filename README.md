@@ -38,4 +38,4 @@ Ein intelligentes Modul, das auf Knopfdruck spezialisierte Hilfe bietet:
 3.  **Notfallkontakt hinterlegen:** Trage in den Einstellungen die Nummer deiner Vertrauensperson ein.
 
 ---
-*Hinweis: PaxMentis ist ein unterstützendes Werkzeug und ersetzt keine professionelle psychotherapeutische oder ärztliche Behandlung. In akuten Notfällen wenden Sie sich bitte immer an den ärztlichen Bereitschaftsdienst (116117) oder den Notruf (112).*
+*Hinweis: PaxMentis ist ein unterstützendes Werkzeug und ersetzt keine professionelle psychotherapeutische oder ärztliche Behandlung. In akuten Notfällen wenden Sie sich bitte immer an den ärztlichen Bereitschaftsdienst (116117) oder den Notruf (112). Zudem ist es noch nicht ausgereift und unterliegt ständiger Überarbeitung und Optimierung.*
