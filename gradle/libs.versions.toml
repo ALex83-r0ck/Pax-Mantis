@@ -1,7 +1,7 @@
 [versions]
-androidGradlePlugin = "9.2.1"
+androidGradlePlugin = "9.3.3"
 kotlin = "2.3.21"
-ksp = "2.3.2"
+ksp = "2.3.6"
 androidxCore = "1.18.0"
 androidxAppCompat = "1.7.1"
 androidxLifecycle = "2.10.0"
