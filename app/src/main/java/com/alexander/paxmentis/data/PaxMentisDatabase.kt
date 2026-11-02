@@ -14,9 +14,10 @@ import net.zetetic.database.sqlcipher.SQLiteDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.io.File
 
-@Database(entities = [WorryEntry::class], version = 2)
+@Database(entities = [WorryEntry::class, CrisisPlanItem::class], version = 3)
 abstract class PaxMentisDatabase : RoomDatabase() {
     abstract fun worryEntryDao(): WorryEntryDao
+    abstract fun crisisPlanDao(): CrisisPlanDao
 
     companion object {
         /**
@@ -35,6 +36,16 @@ abstract class PaxMentisDatabase : RoomDatabase() {
                 )
                 db.execSQL("DROP TABLE `worry_entries`")
                 db.execSQL("ALTER TABLE `worry_entries_new` RENAME TO `worry_entries`")
+            }
+        }
+
+        /** Version 3: Krisenplan. */
+        internal val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `crisis_plan_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`section` TEXT NOT NULL, `text` TEXT NOT NULL, `phone` TEXT, `position` INTEGER NOT NULL)"
+                )
             }
         }
 
@@ -74,7 +85,7 @@ abstract class PaxMentisDatabase : RoomDatabase() {
 
             return Room.databaseBuilder(context, PaxMentisDatabase::class.java, dbName)
                 .openHelperFactory(SupportOpenHelperFactory(passphrase))
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
         }
 

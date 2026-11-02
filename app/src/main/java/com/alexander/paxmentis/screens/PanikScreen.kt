@@ -1,10 +1,5 @@
 package com.alexander.paxmentis.screens
 
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,7 +10,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,6 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.alexander.paxmentis.domain.PANIC_STEPS
 import com.alexander.paxmentis.domain.isPanicDone
 import com.alexander.paxmentis.domain.nextPanicStep
+import com.alexander.paxmentis.ui.components.EmergencyHelp
 import com.alexander.paxmentis.ui.tts.rememberTts
 import com.alexander.paxmentis.ui.viewmodels.PanicViewModel
 import kotlinx.coroutines.delay
@@ -32,13 +27,13 @@ private const val STEP_DURATION_MS = 10_000L
 
 @Composable
 fun PanicScreen(
-    viewModel: PanicViewModel = hiltViewModel()
+    viewModel: PanicViewModel = hiltViewModel(),
+    onOpenCrisisPlan: (() -> Unit)? = null
 ) {
     // step == PANIC_STEPS.size bedeutet: Übung durchlaufen.
     var step by rememberSaveable { mutableIntStateOf(0) }
     var useTTS by rememberSaveable { mutableStateOf(true) }
     val tts = rememberTts()
-    val context = LocalContext.current
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
     val isDone = isPanicDone(step)
@@ -129,11 +124,17 @@ fun PanicScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Hilfe ist IMMER sichtbar – nicht erst nach Ende der Übung.
-            EmergencyActions(
-                context = context,
+            EmergencyHelp(
                 contactName = emergencyContact,
                 contactNumber = emergencyNumber
             )
+
+            if (onOpenCrisisPlan != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(onClick = onOpenCrisisPlan, modifier = Modifier.fillMaxWidth()) {
+                    Text("Meinen Krisenplan öffnen")
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -148,68 +149,5 @@ fun PanicScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun EmergencyActions(
-    context: Context,
-    contactName: String,
-    contactNumber: String
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text("Sofort Hilfe holen", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-
-        if (contactNumber.isNotBlank()) {
-            Button(
-                onClick = { dial(context, contactNumber) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) {
-                Text("${contactName.ifBlank { "Vertrauensperson" }} anrufen", fontSize = 18.sp)
-            }
-        } else {
-            Text(
-                "Noch keine Vertrauensperson hinterlegt. Du kannst sie in den Einstellungen eintragen.",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-
-        OutlinedButton(
-            onClick = { dial(context, "08001110111") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Telefonseelsorge 0800 111 0 111 (kostenlos, 24/7)", textAlign = TextAlign.Center)
-        }
-
-        OutlinedButton(
-            onClick = { dial(context, "116117") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Ärztlicher Bereitschaftsdienst 116117")
-        }
-
-        OutlinedButton(
-            onClick = { dial(context, "112") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-        ) {
-            Text("Notruf 112", fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-/** Öffnet die Wähl-App mit der Nummer. Braucht keine CALL_PHONE-Berechtigung. */
-private fun dial(context: Context, number: String) {
-    val intent = Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", number, null))
-    try {
-        context.startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
-        // z. B. Tablet ohne Telefonfunktion – Nummer wenigstens anzeigen.
-        Toast.makeText(context, "Kein Telefon verfügbar. Nummer: $number", Toast.LENGTH_LONG).show()
     }
 }

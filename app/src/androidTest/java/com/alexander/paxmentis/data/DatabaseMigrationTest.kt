@@ -100,6 +100,17 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    fun migratedDatabase_hasUsableCrisisPlan() = runBlocking {
+        createOldDatabase(DatabaseKeyProvider.LEGACY_FIXED_PASSPHRASE, listOf("alt"), interimSchema = true)
+        val db = open(newProvider())
+
+        db.crisisPlanDao().insert(CrisisPlanItem(section = "REASONS", text = "mein Hund"))
+
+        assertEquals(listOf("mein Hund"), db.crisisPlanDao().getAll().first().map { it.text })
+        assertEquals(listOf("alt"), db.worryEntryDao().getAll().first().map { it.worry })
+    }
+
+    @Test
     fun secondStartAfterMigration_entriesStillThere() {
         createOldDatabase(DatabaseKeyProvider.LEGACY_FIXED_PASSPHRASE, listOf("bleibt"))
         readWorries(newProvider())

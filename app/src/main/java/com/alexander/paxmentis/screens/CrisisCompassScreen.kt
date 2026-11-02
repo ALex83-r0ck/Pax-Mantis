@@ -52,6 +52,16 @@ fun CrisisCompassScreen(navController: NavController) {
             color = MaterialTheme.colorScheme.secondary
         )
 
+        // Ganz oben: Suizidgedanken offen benennen. Direkt danach zu fragen erhöht das Risiko nicht.
+        CrisisOptionCard(
+            title = "Suizidgedanken",
+            description = "Ich denke daran, mir etwas anzutun.",
+            icon = Icons.Default.Favorite,
+            color = MaterialTheme.colorScheme.errorContainer,
+            onClick = { navController.navigate("crisis_plan") }
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
         if (isNight) {
             CrisisOptionCard(
                 title = "Nachtwache",

@@ -159,6 +159,18 @@ fun AppNavigation(
                         scope.launch { drawerState.close() }
                     }
                 )
+                NavigationItem(
+                    icon = Icons.Default.Favorite,
+                    label = "Mein Krisenplan",
+                    isSelected = currentRoute == "crisis_plan",
+                    onClick = {
+                        navController.navigate("crisis_plan") {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                        scope.launch { drawerState.close() }
+                    }
+                )
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 
@@ -265,7 +277,11 @@ fun AppNavigation(
                 composable("crisis_compass") { CrisisCompassScreen(navController) }
                 composable("neutral_messaging") { NeutralMessagingScreen() }
                 composable("shared_reality") { SharedRealityScreen() }
-                composable(MainActivity.ROUTE_PANIC) { PanicScreen() }
+                composable(MainActivity.ROUTE_PANIC) {
+                    PanicScreen(onOpenCrisisPlan = { navController.navigate("crisis_plan") })
+                }
+                // Bewusst ohne Sperre – siehe CrisisPlanScreen.
+                composable("crisis_plan") { CrisisPlanScreen() }
                 composable("grounding_54321") { GroundingScreen() }
                 composable("depression_help") { DepressionHelpScreen() }
                 composable("safe_space") { SafeSpaceScreen() }
