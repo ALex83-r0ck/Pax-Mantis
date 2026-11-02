@@ -55,6 +55,18 @@ class CrisisPlanDaoTest {
     }
 
     @Test
+    fun insertAllStoresEveryItem() = runBlocking {
+        dao.insertAll(
+            listOf(
+                CrisisPlanItem(section = "REASONS", text = "mein Hund", position = 0),
+                CrisisPlanItem(section = "HELP_PEOPLE", text = "Mama", phone = "0170", position = 0)
+            )
+        )
+
+        assertEquals(setOf("mein Hund", "Mama"), dao.getAll().first().map { it.text }.toSet())
+    }
+
+    @Test
     fun deleteRemovesItem() = runBlocking {
         dao.insert(CrisisPlanItem(section = "REASONS", text = "mein Hund"))
         dao.delete(dao.getAll().first().single())

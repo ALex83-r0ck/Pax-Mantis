@@ -1,6 +1,9 @@
 package com.alexander.paxmentis.screens
 
+import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,12 +15,16 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +54,28 @@ fun CrisisPlanScreen(
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
     var editing by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val toast: (String) -> Unit = { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        uri?.let { viewModel.exportTo(context.contentResolver, it, toast) }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { viewModel.importFrom(context.contentResolver, it, toast) }
+    }
+    val transfer = PlanTransfer(
+        onExport = { exportLauncher.launch("Krisenplan.txt") },
+        onImport = { importLauncher.launch(arrayOf("text/*")) },
+        onShare = {
+            viewModel.exportText()?.let { text ->
+                val send = Intent(Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(Intent.EXTRA_SUBJECT, "Mein Krisenplan")
+                    .putExtra(Intent.EXTRA_TEXT, text)
+                context.startActivity(Intent.createChooser(send, "Krisenplan teilen"))
+            }
+        }
+    )
 
     Column(
         modifier = Modifier
@@ -89,9 +118,14 @@ fun CrisisPlanScreen(
                 onAdd = viewModel::addItem,
                 onUpdate = viewModel::updateItem,
                 onDelete = viewModel::deleteItem,
-                onDone = { editing = false }
+                onDone = { editing = false },
+                transfer = transfer
             )
-            current != null -> CrisisPlanWalkthrough(plan = current, onEdit = { editing = true })
+            current != null -> CrisisPlanWalkthrough(
+                plan = current,
+                onEdit = { editing = true },
+                onImport = transfer.onImport
+            )
             // Lädt noch (oder Datenbank nicht verfügbar): Notrufe trotzdem sofort zeigen.
         }
 
@@ -113,7 +147,8 @@ fun CrisisPlanScreen(
 @Composable
 private fun CrisisPlanWalkthrough(
     plan: Map<CrisisPlanSection, List<CrisisPlanItem>>,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onImport: () -> Unit
 ) {
     val steps = crisisSteps(plan.filterValues { it.isNotEmpty() }.keys)
     val reasons = plan[CrisisPlanSection.REASONS].orEmpty()
@@ -126,6 +161,9 @@ private fun CrisisPlanWalkthrough(
         )
         OutlinedButton(onClick = onEdit, modifier = Modifier.fillMaxWidth()) {
             Text("Plan in einer ruhigen Minute anlegen")
+        }
+        TextButton(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
+            Text("Gesicherten Plan aus Datei laden")
         }
         return
     }
@@ -214,7 +252,8 @@ private fun CrisisPlanEditor(
     onAdd: (CrisisPlanSection, String, String?, (Boolean) -> Unit) -> Unit,
     onUpdate: (CrisisPlanItem, String, String?, (Boolean) -> Unit) -> Unit,
     onDelete: (CrisisPlanItem) -> Unit,
-    onDone: () -> Unit
+    onDone: () -> Unit,
+    transfer: PlanTransfer
 ) {
     val context = LocalContext.current
     var adding by remember { mutableStateOf<CrisisPlanSection?>(null) }
@@ -268,6 +307,8 @@ private fun CrisisPlanEditor(
         }
     }
 
+    TransferCard(transfer)
+
     Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text("Fertig") }
 
     adding?.let { section ->
@@ -302,6 +343,50 @@ private fun CrisisPlanEditor(
                 TextButton(onClick = { deleteCandidate = null }) { Text("Behalten") }
             }
         )
+    }
+}
+
+private class PlanTransfer(
+    val onExport: () -> Unit,
+    val onImport: () -> Unit,
+    val onShare: () -> Unit
+)
+
+/**
+ * Der Datenbankschlüssel liegt im Keystore und geht beim Deinstallieren oder Handywechsel verloren –
+ * eine eigene Sicherung ist der einzige Weg, den Plan mitzunehmen.
+ */
+@Composable
+private fun TransferCard(transfer: PlanTransfer) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Sichern & Teilen", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Dein Plan liegt verschlüsselt nur auf diesem Handy. Wird die App gelöscht oder das Handy " +
+                    "gewechselt, ist er weg. Sichere ihn als Datei – oder schick ihn dir oder deiner Therapeutin.",
+                fontSize = 14.sp
+            )
+            Text(
+                "Die Datei ist lesbar und nicht verschlüsselt.",
+                fontSize = 13.sp,
+                fontStyle = FontStyle.Italic
+            )
+            TransferButton("Als Datei sichern", Icons.Default.FileDownload, transfer.onExport)
+            TransferButton("Teilen oder drucken", Icons.Default.Share, transfer.onShare)
+            TransferButton("Aus Datei laden", Icons.Default.FileUpload, transfer.onImport)
+        }
+    }
+}
+
+@Composable
+private fun TransferButton(label: String, icon: ImageVector, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(label)
     }
 }
 

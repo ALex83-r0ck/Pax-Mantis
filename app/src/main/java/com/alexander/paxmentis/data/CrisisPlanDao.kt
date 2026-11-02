@@ -12,6 +12,9 @@ interface CrisisPlanDao {
     @Insert
     suspend fun insert(item: CrisisPlanItem)
 
+    @Insert
+    suspend fun insertAll(items: List<CrisisPlanItem>)
+
     @Query("SELECT * FROM crisis_plan_items ORDER BY position, id")
     fun getAll(): Flow<List<CrisisPlanItem>>
 

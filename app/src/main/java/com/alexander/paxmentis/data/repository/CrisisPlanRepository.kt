@@ -17,6 +17,9 @@ class CrisisPlanRepository @Inject constructor(
 
     suspend fun insertItem(item: CrisisPlanItem): Boolean = guarded { crisisPlanDao.get().insert(item) }
 
+    /** Alle oder keiner – ein abgebrochener Import hinterlässt keinen halben Plan. */
+    suspend fun insertItems(items: List<CrisisPlanItem>): Boolean = guarded { crisisPlanDao.get().insertAll(items) }
+
     suspend fun updateItem(item: CrisisPlanItem): Boolean = guarded { crisisPlanDao.get().update(item) }
 
     suspend fun deleteItem(item: CrisisPlanItem): Boolean = guarded { crisisPlanDao.get().delete(item) }
