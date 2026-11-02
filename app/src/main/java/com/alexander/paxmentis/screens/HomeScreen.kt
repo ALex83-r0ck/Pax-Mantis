@@ -1,5 +1,6 @@
 package com.alexander.paxmentis.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +35,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val nickname by viewModel.nickname.collectAsState()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -52,7 +55,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Hallo $nickname ♥️",
+            text = if (nickname.isBlank()) "Hallo ♥️" else "Hallo $nickname ♥️",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -157,7 +160,10 @@ fun HomeScreen(
 
         // Footer Button
         OutlinedButton(
-            onClick = { viewModel.addQuickEntry() },
+            onClick = {
+                viewModel.addQuickEntry()
+                Toast.makeText(context, "Vorfall im Sorgenstuhl vermerkt.", Toast.LENGTH_SHORT).show()
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {

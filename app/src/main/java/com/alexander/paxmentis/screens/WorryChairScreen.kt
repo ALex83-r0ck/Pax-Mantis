@@ -1,7 +1,5 @@
 package com.alexander.paxmentis.screens
 
-import android.speech.tts.TextToSpeech
-import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,19 +9,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alexander.paxmentis.data.WorryEntry
+import com.alexander.paxmentis.ui.tts.rememberTts
 import com.alexander.paxmentis.ui.viewmodels.WorryChairViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -39,25 +38,10 @@ fun WorryChairScreen(
     
     val entries by viewModel.entries.collectAsState()
     val nickname by viewModel.nickname.collectAsState()
-    val context = LocalContext.current
-    
-    var editEntry by remember { mutableStateOf<WorryEntry?>(null) }
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    var isRecordingMode by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(0.8f)
-                tts?.setPitch(0.9f)
-            }
-        }
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
-        }
-    }
+    var editEntry by remember { mutableStateOf<WorryEntry?>(null) }
+    var deleteCandidate by remember { mutableStateOf<WorryEntry?>(null) }
+    val tts = rememberTts(speechRate = 0.8f, pitch = 0.9f)
 
     Box(
         modifier = Modifier
@@ -111,7 +95,7 @@ fun WorryChairScreen(
                     value = worry,
                     onValueChange = { worry = it },
                     placeholder = "Lass es hier raus...",
-                    onHelpClick = { tts?.speak("Atme tief durch. Was genau macht dir gerade Sorgen?", TextToSpeech.QUEUE_FLUSH, null, null) }
+                    onHelpClick = { tts.speak("Atme tief durch. Was genau macht dir gerade Sorgen?") }
                 )
             }
 
@@ -121,7 +105,7 @@ fun WorryChairScreen(
                     value = reason,
                     onValueChange = { reason = it },
                     placeholder = "Gibt es einen Auslöser?",
-                    onHelpClick = { tts?.speak("Versuche den Ursprung zu finden. Gab es eine bestimmte Situation?", TextToSpeech.QUEUE_FLUSH, null, null) }
+                    onHelpClick = { tts.speak("Versuche den Ursprung zu finden. Gab es eine bestimmte Situation?") }
                 )
             }
 
@@ -131,7 +115,7 @@ fun WorryChairScreen(
                     value = worstCase,
                     onValueChange = { worstCase = it },
                     placeholder = "Was wäre das Schlimmste?",
-                    onHelpClick = { tts?.speak("Oft ist das schlimmste Szenario weniger bedrohlich, wenn wir es aussprechen.", TextToSpeech.QUEUE_FLUSH, null, null) }
+                    onHelpClick = { tts.speak("Oft ist das schlimmste Szenario weniger bedrohlich, wenn wir es aussprechen.") }
                 )
             }
 
@@ -141,7 +125,7 @@ fun WorryChairScreen(
                     value = solution,
                     onValueChange = { solution = it },
                     placeholder = "Eine kleine Lösung...",
-                    onHelpClick = { tts?.speak("Denk an eine winzige Sache, die jetzt gut tun würde.", TextToSpeech.QUEUE_FLUSH, null, null) }
+                    onHelpClick = { tts.speak("Denk an eine winzige Sache, die jetzt gut tun würde.") }
                 )
             }
 
@@ -159,7 +143,7 @@ fun WorryChairScreen(
                             reason = ""
                             worstCase = ""
                             solution = ""
-                            tts?.speak("Danke, dass du das geteilt hast. Du hast es hier abgelegt.", TextToSpeech.QUEUE_FLUSH, null, null)
+                            tts.speak("Danke, dass du das geteilt hast. Du hast es hier abgelegt.")
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -180,19 +164,36 @@ fun WorryChairScreen(
                 )
             }
 
-            items(entries) { entry ->
+            items(entries, key = { it.id }) { entry ->
                 WorryEntryCard(
                     entry = entry,
-                    onDelete = { viewModel.deleteEntry(it) },
+                    onDelete = { deleteCandidate = it },
                     onEdit = { editEntry = it }
                 )
             }
         }
     }
 
-    if (editEntry != null) {
+    deleteCandidate?.let { candidate ->
+        AlertDialog(
+            onDismissRequest = { deleteCandidate = null },
+            title = { Text("Eintrag löschen?") },
+            text = { Text("Dieser Gedanke wird endgültig gelöscht.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteEntry(candidate)
+                    deleteCandidate = null
+                }) { Text("Löschen", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteCandidate = null }) { Text("Behalten") }
+            }
+        )
+    }
+
+    editEntry?.let { current ->
         EditWorryDialog(
-            entry = editEntry!!,
+            entry = current,
             onDismiss = { editEntry = null },
             onConfirm = { updated ->
                 viewModel.updateEntry(updated)
@@ -219,7 +220,7 @@ fun WorryInputSection(
         ) {
             Text(label, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
             IconButton(onClick = onHelpClick) {
-                Icon(Icons.Default.HelpOutline, contentDescription = "Hilfe", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = "Hilfe", tint = MaterialTheme.colorScheme.primary)
             }
         }
         OutlinedTextField(
@@ -238,7 +239,7 @@ fun WorryEntryCard(
     onDelete: (WorryEntry) -> Unit,
     onEdit: (WorryEntry) -> Unit
 ) {
-    val dateFormat = remember { SimpleDateFormat("dd. MMMM yyyy", Locale.GERMAN) }
+    val dateFormat = remember { SimpleDateFormat("dd. MMMM yyyy, HH:mm", Locale.GERMAN) }
     val formattedDate = dateFormat.format(Date(entry.date))
     
     Card(
@@ -251,11 +252,11 @@ fun WorryEntryCard(
                 Text(text = formattedDate, fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
                 Row {
                     IconButton(onClick = { onEdit(entry) }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Edit, contentDescription = "Bearbeiten", modifier = Modifier.size(16.dp))
                     }
                     Spacer(Modifier.width(8.dp))
                     IconButton(onClick = { onDelete(entry) }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Delete, contentDescription = "Löschen", modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -266,7 +267,7 @@ fun WorryEntryCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Lightbulb, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(4.dp))
-                    Text(text = entry.solution!!, fontSize = 14.sp, fontStyle = FontStyle.Italic)
+                    Text(text = entry.solution, fontSize = 14.sp, fontStyle = FontStyle.Italic)
                 }
             }
         }
@@ -300,7 +301,15 @@ fun EditWorryDialog(
         },
         confirmButton = {
             Button(onClick = { 
-                onConfirm(entry.copy(worry = worry, reason = reason, worstCase = worstCase, solution = solution))
+                // Leere Felder wieder als null speichern – wie beim Anlegen.
+                onConfirm(
+                    entry.copy(
+                        worry = worry.ifBlank { null },
+                        reason = reason.ifBlank { null },
+                        worstCase = worstCase.ifBlank { null },
+                        solution = solution.ifBlank { null }
+                    )
+                )
             }) { Text("Speichern") }
         },
         dismissButton = {

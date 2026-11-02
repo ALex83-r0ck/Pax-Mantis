@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.SecureRandom
 import javax.crypto.Cipher
@@ -31,9 +32,20 @@ class DatabaseKeyProvider @Inject constructor(
 ) {
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    /** Der gespeicherte Schlüssel lässt sich nicht mehr entschlüsseln (z. B. Keystore-Eintrag verloren). */
+    class KeyLostException(cause: Throwable) : Exception(cause)
+
     @Synchronized
     fun getOrCreatePassphrase(): ByteArray {
-        prefs.getString(KEY_WRAPPED_PASSPHRASE, null)?.let { return unwrap(it) }
+        prefs.getString(KEY_WRAPPED_PASSPHRASE, null)?.let { stored ->
+            return try {
+                unwrap(stored)
+            } catch (e: GeneralSecurityException) {
+                throw KeyLostException(e)
+            } catch (e: IllegalArgumentException) {
+                throw KeyLostException(e)
+            }
+        }
 
         val random = ByteArray(32).also { SecureRandom().nextBytes(it) }
         // Hex-String statt Rohbytes: SQLCipher leitet daraus per KDF den Schlüssel ab,
@@ -45,6 +57,12 @@ class DatabaseKeyProvider @Inject constructor(
             "Datenbank-Schlüssel konnte nicht gespeichert werden"
         }
         return passphrase
+    }
+
+    /** Verwirft den nicht mehr lesbaren Schlüssel. Danach erzeugt [getOrCreatePassphrase] einen neuen. */
+    @Synchronized
+    fun discardPassphrase() {
+        prefs.edit().remove(KEY_WRAPPED_PASSPHRASE).commit()
     }
 
     fun isLegacyMigrationDone(): Boolean = prefs.getBoolean(KEY_LEGACY_MIGRATED, false)

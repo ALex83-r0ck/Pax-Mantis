@@ -1,6 +1,5 @@
 package com.alexander.paxmentis.screens
 
-import android.speech.tts.TextToSpeech
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,17 +14,15 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.util.Locale
+import com.alexander.paxmentis.ui.tts.rememberTts
 
 @Composable
 fun SafeSpaceScreen() {
-    val context = LocalContext.current
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    val tts = rememberTts(speechRate = 0.7f, pitch = 0.85f)
     var isStarted by remember { mutableStateOf(false) }
 
     val pulse = rememberInfiniteTransition()
@@ -39,20 +36,6 @@ fun SafeSpaceScreen() {
     )
 
     val text = "Schließe deine Augen, wenn du magst. Stelle dir einen Ort vor, an dem du absolut sicher bist. Vielleicht ein Wald, ein Strand oder ein gemütliches Zimmer. Atme die Ruhe dieses Ortes ein. Du bist hier geborgen. Nichts kann dir hier etwas anhaben."
-
-    DisposableEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(0.7f)
-                tts?.setPitch(0.85f)
-            }
-        }
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -92,7 +75,7 @@ fun SafeSpaceScreen() {
             if (!isStarted) {
                 Button(onClick = { 
                     isStarted = true
-                    tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+                    tts.speak(text)
                 }) {
                     Text("Reise beginnen")
                 }
@@ -102,13 +85,14 @@ fun SafeSpaceScreen() {
                     fontSize = 18.sp,
                     textAlign = TextAlign.Center,
                     lineHeight = 28.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    // Fester Hintergrund (hellblau) -> feste dunkle Schrift statt Theme-Farbe.
+                    color = Color(0xFF1A2B3C)
                 )
                 
                 Spacer(modifier = Modifier.height(40.dp))
                 
                 Button(onClick = { 
-                    tts?.stop()
+                    tts.stop()
                     isStarted = false 
                 }) {
                     Text("Beenden")

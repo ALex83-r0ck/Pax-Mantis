@@ -6,8 +6,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
-import com.alexander.paxmentis.MainActivity
-import com.alexander.paxmentis.R
 
 class PanicWidget : AppWidgetProvider() {
     override fun onUpdate(

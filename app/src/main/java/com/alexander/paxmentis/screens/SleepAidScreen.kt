@@ -1,7 +1,6 @@
 package com.alexander.paxmentis.screens
 
 import android.media.MediaPlayer
-import android.speech.tts.TextToSpeech
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -28,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alexander.paxmentis.R
 import kotlinx.coroutines.delay
-import java.util.Locale
+import com.alexander.paxmentis.ui.tts.rememberTts
 import kotlin.random.Random
 
 @Composable
@@ -37,7 +36,7 @@ fun SleepAidScreen() {
     var isPlayingMusic by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val mediaPlayer = remember { mutableStateOf<MediaPlayer?>(null) }
-    val tts = remember { mutableStateOf<TextToSpeech?>(null) }
+    val tts = rememberTts(speechRate = 0.65f, pitch = 0.8f)
     val starAlpha = remember { Animatable(0f) }
 
     val affirmations = listOf(
@@ -51,37 +50,30 @@ fun SleepAidScreen() {
     )
 
     DisposableEffect(Unit) {
-        tts.value = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts.value?.language = Locale.GERMAN
-                tts.value?.setSpeechRate(0.65f)
-                tts.value?.setPitch(0.8f)
-            }
-        }
+        // MediaPlayer.create() liefert null, wenn die Datei nicht geladen werden kann.
+        val player: MediaPlayer? = MediaPlayer.create(context, R.raw.ambientpian)
+        player?.isLooping = true
+        player?.setVolume(0.3f, 0.3f)
+        mediaPlayer.value = player
         onDispose {
-            tts.value?.stop()
-            tts.value?.shutdown()
-        }
-    }
-
-    DisposableEffect(Unit) {
-        mediaPlayer.value = MediaPlayer.create(context, R.raw.ambientpian).apply {
-            isLooping = true
-            setVolume(0.3f, 0.3f)
-        }
-        onDispose {
-            mediaPlayer.value?.stop()
-            mediaPlayer.value?.release()
+            player?.stop()
+            player?.release()
+            mediaPlayer.value = null
         }
     }
 
     LaunchedEffect(isMeditating) {
         if (isMeditating) {
-            while (isMeditating) {
-                val text = affirmations.random()
-                tts.value?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+            var last: String? = null
+            while (true) {
+                // Nicht zweimal dieselbe Affirmation hintereinander.
+                val text = affirmations.filter { it != last }.random()
+                last = text
+                tts.speak(text)
                 delay(15000) // Alle 15 Sekunden eine Affirmation
             }
+        } else {
+            tts.stop()
         }
     }
 

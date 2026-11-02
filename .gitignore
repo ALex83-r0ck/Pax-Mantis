@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# IDE (Android Studio erzeugt das lokal neu)
+.idea/

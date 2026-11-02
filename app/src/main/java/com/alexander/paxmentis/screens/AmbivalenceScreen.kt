@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -18,12 +19,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.alexander.paxmentis.ui.viewmodels.AmbivalenceViewModel
 
 @Composable
-fun AmbivalenceScreen() {
-    var isLocked by remember { mutableStateOf(true) }
-    var pros by remember { mutableStateOf("") }
-    var cons by remember { mutableStateOf("") }
+fun AmbivalenceScreen(
+    viewModel: AmbivalenceViewModel = hiltViewModel()
+) {
+    var isLocked by rememberSaveable { mutableStateOf(true) }
+    var decision by rememberSaveable { mutableStateOf("") }
+    var pros by rememberSaveable { mutableStateOf("") }
+    var cons by rememberSaveable { mutableStateOf("") }
+    var saved by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -98,8 +105,16 @@ fun AmbivalenceScreen() {
             )
 
             OutlinedTextField(
+                value = decision,
+                onValueChange = { decision = it; saved = false },
+                label = { Text("Worum geht es?") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            OutlinedTextField(
                 value = pros,
-                onValueChange = { pros = it },
+                onValueChange = { pros = it; saved = false },
                 label = { Text("Was spricht DAFÜR? (Kurzfristig & Langfristig)") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 4
@@ -107,7 +122,7 @@ fun AmbivalenceScreen() {
 
             OutlinedTextField(
                 value = cons,
-                onValueChange = { cons = it },
+                onValueChange = { cons = it; saved = false },
                 label = { Text("Was spricht DAGEGEN? (Konsequenzen)") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 4
@@ -126,8 +141,24 @@ fun AmbivalenceScreen() {
                 )
             }
             
-            Button(onClick = { /* Speichern oder Logik */ }, modifier = Modifier.fillMaxWidth()) {
-                Text("Gedanken festhalten")
+            Button(
+                onClick = {
+                    viewModel.saveDecisionCheck(decision, pros, cons)
+                    saved = true
+                },
+                enabled = !saved && (decision.isNotBlank() || pros.isNotBlank() || cons.isNotBlank()),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Im Sorgenstuhl festhalten")
+            }
+
+            if (saved) {
+                Text(
+                    "Gespeichert – mit dem Hinweis, frühestens in 24 Stunden zu entscheiden. " +
+                        "Du findest es im Sorgenstuhl.",
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
         

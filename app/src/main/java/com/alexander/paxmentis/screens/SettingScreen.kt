@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alexander.paxmentis.ui.viewmodels.SettingsViewModel
@@ -28,6 +29,11 @@ fun SettingsScreen(
     val nickname by viewModel.nickname.collectAsState()
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
+    val context = LocalContext.current
+    val versionName = remember {
+        runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+            .getOrNull() ?: "?"
+    }
 
     Column(
         modifier = Modifier
@@ -121,7 +127,7 @@ fun SettingsScreen(
         }
 
         Text(
-            "Version 1.2.0\nOffline-Modus aktiv\nVerschlüsselung aktiv",
+            "Version $versionName\nOffline-Modus aktiv\nVerschlüsselung aktiv",
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 16.dp),
             color = MaterialTheme.colorScheme.outline

@@ -278,7 +278,16 @@ fun AppNavigation(
                     LockedContent(isUnlocked, authMessage, onRequestUnlock) { SettingsScreen() }
                 }
                 composable("ambivalence") { AmbivalenceScreen() }
-                composable("trigger_block") { TriggerBlockScreen(onNavigateBack = { navController.popBackStack() }) }
+                composable("trigger_block") {
+                    TriggerBlockScreen(
+                        onStartBreathing = {
+                            navController.navigate("breathing") {
+                                popUpTo("trigger_block") { inclusive = true }
+                            }
+                        },
+                        onDismiss = { navController.popBackStack() }
+                    )
+                }
                 composable("night_watch") { NightWatchScreen() }
             }
 

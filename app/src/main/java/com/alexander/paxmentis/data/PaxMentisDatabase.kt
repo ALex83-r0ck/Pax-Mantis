@@ -2,6 +2,7 @@ package com.alexander.paxmentis.data
 
 import android.content.Context
 import android.database.sqlite.SQLiteException
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -15,6 +16,7 @@ abstract class PaxMentisDatabase : RoomDatabase() {
 
     companion object {
         private const val DB_NAME = "paxmentis_db"
+        private const val TAG = "PaxMentisDatabase"
 
         /** Früher fest im Code hinterlegter Schlüssel – nur noch für die einmalige Umschlüsselung. */
         private val LEGACY_PASSPHRASE = "secure_passphrase".toByteArray(Charsets.UTF_8)
@@ -28,7 +30,16 @@ abstract class PaxMentisDatabase : RoomDatabase() {
             }
 
         private fun build(context: Context, keyProvider: DatabaseKeyProvider): PaxMentisDatabase {
-            val passphrase = keyProvider.getOrCreatePassphrase()
+            val passphrase = try {
+                keyProvider.getOrCreatePassphrase()
+            } catch (e: DatabaseKeyProvider.KeyLostException) {
+                // Ohne Schlüssel ist die alte Datenbank nicht mehr lesbar. Statt bei jedem
+                // Öffnen abzustürzen: Datei beiseitelegen (nicht löschen) und neu beginnen.
+                Log.e(TAG, "Datenbank-Schlüssel verloren, alte Datenbank wird beiseitegelegt", e)
+                quarantineDatabase(context)
+                keyProvider.discardPassphrase()
+                keyProvider.getOrCreatePassphrase()
+            }
             migrateFromLegacyKey(context, passphrase, keyProvider)
 
             return Room.databaseBuilder(context, PaxMentisDatabase::class.java, DB_NAME)
@@ -70,6 +81,15 @@ abstract class PaxMentisDatabase : RoomDatabase() {
 
             if (rekeyed || canOpen(file.absolutePath, newPassphrase)) {
                 keyProvider.markLegacyMigrationDone()
+            }
+        }
+
+        private fun quarantineDatabase(context: Context) {
+            val db = context.getDatabasePath(DB_NAME)
+            val suffix = ".unreadable-${System.currentTimeMillis()}"
+            listOf("", "-wal", "-shm", "-journal").forEach { ext ->
+                val file = java.io.File(db.path + ext)
+                if (file.exists()) file.renameTo(java.io.File(db.path + suffix + ext))
             }
         }
 

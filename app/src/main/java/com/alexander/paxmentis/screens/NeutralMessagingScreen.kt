@@ -10,7 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.alexander.paxmentis.domain.NeutralTemplate
+import com.alexander.paxmentis.domain.suggestNeutralTemplate
 
 @Composable
 fun NeutralMessagingScreen() {
@@ -31,13 +33,6 @@ fun NeutralMessagingScreen() {
     var neutralOutput by remember { mutableStateOf("") }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
-
-    val templates = mapOf(
-        "Wut/Vorwurf" to "Ich habe die Situation wahrgenommen und konzentriere mich aktuell auf meine Ruhe.",
-        "Rechtfertigung" to "Ich respektiere deine Sichtweise, bleibe aber bei meiner aktuellen Entscheidung zum Schutz meiner Stabilität.",
-        "Abgrenzung" to "Ich benötige gerade Zeit für mich und werde mich melden, wenn ich bereit für ein sachliches Gespräch bin.",
-        "Trigger-Reaktion" to "Diese Information löst Unruhe aus. Ich nehme sie zur Kenntnis, reagiere aber erst später darauf."
-    )
 
     Column(
         modifier = Modifier
@@ -79,19 +74,14 @@ fun NeutralMessagingScreen() {
 
         Button(
             onClick = {
-                neutralOutput = when {
-                    rawInput.contains("sauer", true) || rawInput.contains("wütend", true) -> templates["Wut/Vorwurf"]!!
-                    rawInput.contains("warum", true) || rawInput.contains("aber", true) -> templates["Rechtfertigung"]!!
-                    rawInput.contains("lass mich", true) || rawInput.contains("ruhe", true) -> templates["Abgrenzung"]!!
-                    else -> "Ich nehme das zur Kenntnis und werde zu einem geeigneten Zeitpunkt sachlich darauf zurückkommen."
-                }
+                neutralOutput = suggestNeutralTemplate(rawInput).text
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Default.Sync, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("In sachliche Form bringen")
+            Text("Passende sachliche Vorlage vorschlagen")
         }
 
         if (neutralOutput.isNotEmpty()) {
@@ -122,7 +112,7 @@ fun NeutralMessagingScreen() {
                             val shareIntent = Intent.createChooser(sendIntent, null)
                             context.startActivity(shareIntent)
                         }) {
-                            Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("Senden")
                         }
@@ -131,11 +121,13 @@ fun NeutralMessagingScreen() {
             }
         }
 
-        Divider(modifier = Modifier.padding(vertical = 16.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
         Text("Schnell-Bausteine", fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Start))
         
-        templates.forEach { (label, text) ->
+        NeutralTemplate.entries.filter { it != NeutralTemplate.NEUTRAL }.forEach { template ->
+            val label = template.label
+            val text = template.text
             OutlinedButton(
                 onClick = { neutralOutput = text },
                 modifier = Modifier.fillMaxWidth(),

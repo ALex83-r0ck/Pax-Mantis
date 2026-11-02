@@ -12,4 +12,5 @@ class PanicViewModel @Inject constructor(
 ) : ViewModel() {
     val emergencyContact: StateFlow<String> = userPreferences.emergencyContactFlow
     val emergencyNumber: StateFlow<String> = userPreferences.emergencyNumberFlow
+    val nickname: StateFlow<String> = userPreferences.nicknameFlow
 }

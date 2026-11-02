@@ -30,7 +30,11 @@ Ein intelligentes Modul, das auf Knopfdruck spezialisierte Hilfe bietet:
 *   **Framework:** Jetpack Compose (Modernes UI-Toolkit)
 *   **Sprachausgabe (TTS):** Optimierte, sanfte Frequenzen zur Beruhigung des Nervensystems.
 *   **Haptisches Feedback:** Nutzung der Vibrations-API für geführte Übungen mit geschlossenen Augen.
-*   **Architektur:** MVVM mit Clean Architecture Ansätzen und Hilt (Dependency Injection).
+*   **Architektur:** MVVM mit Hilt (Dependency Injection), Repository für die Datenbank, gemeinsamer TTS-Helfer und reine, unit-getestete Logik im `domain`-Paket.
+
+## 🧪 Tests
+*   **Unit-Tests (JVM):** `./gradlew testDebugUnitTest` – Logik für Panikhilfe, Nachtwache, WhatsApp-Nummern und Neutral-Messaging.
+*   **Instrumented Tests (Gerät/Emulator):** `./gradlew connectedDebugAndroidTest` – Datenbankschicht (Room-DAO).
 
 ## 🚀 Installation & Erste Schritte
 1.  **Biometrie einrichten:** Stelle sicher, dass dein Handy Fingerabdruck oder Gesichtserkennung aktiviert hat.

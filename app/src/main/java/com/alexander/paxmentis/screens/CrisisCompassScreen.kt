@@ -17,13 +17,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import java.util.*
+import com.alexander.paxmentis.domain.isNightTime
+import java.util.Calendar
 
 @Composable
 fun CrisisCompassScreen(navController: NavController) {
-    val calendar = Calendar.getInstance()
-    val hour = calendar.get(Calendar.HOUR_OF_DAY)
-    val isNight = hour >= 22 || hour < 6
+    val isNight = isNightTime(Calendar.getInstance().get(Calendar.HOUR_OF_DAY))
 
     Column(
         modifier = Modifier
@@ -91,6 +90,16 @@ fun CrisisCompassScreen(navController: NavController) {
             icon = Icons.Default.Visibility,
             color = MaterialTheme.colorScheme.tertiaryContainer,
             onClick = { navController.navigate("grounding_54321") }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        CrisisOptionCard(
+            title = "Überforderung / Unsicherheit",
+            description = "Ich brauche einen Ort, an dem ich sicher bin.",
+            icon = Icons.Default.Home,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            onClick = { navController.navigate("safe_space") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))

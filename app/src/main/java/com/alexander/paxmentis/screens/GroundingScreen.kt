@@ -1,6 +1,5 @@
 package com.alexander.paxmentis.screens
 
-import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -11,18 +10,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.util.Locale
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.alexander.paxmentis.ui.tts.rememberTts
 
 @Composable
 fun GroundingScreen() {
-    var step by remember { mutableIntStateOf(5) }
-    val context = LocalContext.current
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    // 5..1 = aktuelle Aufgabe, 0 = fertig. Bisher wurden bei Schritt 1 Aufgabe und
+    // "Gut gemacht" gleichzeitig angezeigt, und der letzte Schritt war nie bestätigbar.
+    var step by rememberSaveable { mutableIntStateOf(5) }
+    val tts = rememberTts(speechRate = 0.75f, pitch = 0.9f)
 
     val instructions = mapOf(
         5 to "Nenne 5 Dinge, die du gerade SIEHST.",
@@ -40,25 +40,9 @@ fun GroundingScreen() {
         1 to Icons.Default.Restaurant
     )
 
-    DisposableEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(0.75f)
-                tts?.setPitch(0.9f)
-                tts?.speak(instructions[5], TextToSpeech.QUEUE_FLUSH, null, null)
-            }
-        }
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
-        }
-    }
-
     LaunchedEffect(step) {
-        if (step in 1..5) {
-            tts?.speak(instructions[step], TextToSpeech.QUEUE_FLUSH, null, null)
-        }
+        val text = instructions[step]
+        if (text != null) tts.speak(text) else tts.speak("Gut gemacht. Du bist jetzt hier im Moment.")
     }
 
     Box(
@@ -88,7 +72,7 @@ fun GroundingScreen() {
             Spacer(modifier = Modifier.height(40.dp))
 
             Icon(
-                icons[step] ?: Icons.Default.Info,
+                icons[step] ?: Icons.Default.CheckCircle,
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.tertiary
@@ -106,13 +90,13 @@ fun GroundingScreen() {
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            if (step > 1) {
+            if (step >= 1) {
                 Button(
                     onClick = { step-- },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                 ) {
-                    Text("Erledigt / Nächster Schritt")
+                    Text(if (step == 1) "Erledigt" else "Erledigt / Nächster Schritt")
                 }
             } else {
                 Text(

@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.speech.tts.TextToSpeech
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,19 +21,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.alexander.paxmentis.domain.PANIC_STEPS
+import com.alexander.paxmentis.domain.isPanicDone
+import com.alexander.paxmentis.domain.nextPanicStep
+import com.alexander.paxmentis.ui.tts.rememberTts
 import com.alexander.paxmentis.ui.viewmodels.PanicViewModel
 import kotlinx.coroutines.delay
-import java.util.Locale
 
 private const val STEP_DURATION_MS = 10_000L
-
-private val PANIC_STEPS = listOf(
-    "Atme tief ein und zähle bis 4",
-    "Halte den Atem für 4 Sekunden",
-    "Atme langsam aus und zähle bis 8",
-    "Fokussiere dich auf einen Punkt in deiner Umgebung",
-    "Wiederhole die Atmung, bis du ruhiger bist"
-)
 
 @Composable
 fun PanicScreen(
@@ -43,43 +37,25 @@ fun PanicScreen(
     // step == PANIC_STEPS.size bedeutet: Übung durchlaufen.
     var step by rememberSaveable { mutableIntStateOf(0) }
     var useTTS by rememberSaveable { mutableStateOf(true) }
-    var ttsReady by remember { mutableStateOf(false) }
+    val tts = rememberTts()
     val context = LocalContext.current
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
-    val isDone = step >= PANIC_STEPS.size
+    val isDone = isPanicDone(step)
 
-    val tts = remember { mutableStateOf<TextToSpeech?>(null) }
-
-    DisposableEffect(Unit) {
-        var engine: TextToSpeech? = null
-        engine = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                engine?.language = Locale.GERMAN
-                ttsReady = true
-            }
-        }
-        tts.value = engine
-        onDispose {
-            engine?.stop()
-            engine?.shutdown()
-        }
-    }
-
-    // Sprechen erst, wenn die Sprachausgabe bereit ist – sonst ging bisher der erste Schritt verloren.
-    LaunchedEffect(step, ttsReady, useTTS) {
+    LaunchedEffect(step, useTTS) {
         if (!useTTS) {
-            tts.value?.stop()
-        } else if (!isDone && ttsReady) {
-            tts.value?.speak(PANIC_STEPS[step], TextToSpeech.QUEUE_FLUSH, null, null)
+            tts.stop()
+        } else if (!isDone) {
+            tts.speak(PANIC_STEPS[step])
         }
     }
 
     // Automatisch weiter – inklusive Übergang in den "Fertig"-Zustand.
     LaunchedEffect(step) {
-        if (step < PANIC_STEPS.size) {
+        if (!isPanicDone(step)) {
             delay(STEP_DURATION_MS)
-            step += 1
+            step = nextPanicStep(step)
         }
     }
 
@@ -135,7 +111,7 @@ fun PanicScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Button(onClick = { step += 1 }) {
+                Button(onClick = { step = nextPanicStep(step) }) {
                     Text(if (step == PANIC_STEPS.size - 1) "Fertig" else "Nächster Schritt")
                 }
             } else {
