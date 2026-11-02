@@ -25,7 +25,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.alexander.paxmentis.R
 import com.alexander.paxmentis.data.UserPreferences
 import kotlin.random.Random
@@ -40,7 +39,7 @@ fun SleepAidScreen(
     var isPlayingMusic by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val mediaPlayer = remember { mutableStateOf<MediaPlayer?>(null) }
-    val tts = remember { mutableStateOf<TextToSpeech?>(null) }
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     val starAlpha = remember { Animatable(0f) }
     val speechRate by userPreferences.speechRateFlow.collectAsState()
 
@@ -54,32 +53,37 @@ fun SleepAidScreen(
         "Morgen ist ein neuer Tag. Heute darfst du einfach ruhen."
     )
 
-    DisposableEffect(Unit) {
-        tts.value = TextToSpeech(context) { status ->
+    DisposableEffect(context) {
+        var textToSpeechInstance: TextToSpeech? = null
+        textToSpeechInstance = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts.value?.language = Locale.GERMAN
-                tts.value?.setSpeechRate(speechRate * 0.65f) // Relativ (Basis 0.65f)
-                tts.value?.setPitch(0.8f)
+                textToSpeechInstance?.language = Locale.GERMAN
+                textToSpeechInstance?.setSpeechRate(speechRate * 0.65f) // Sehr ruhig & langsam
+                textToSpeechInstance?.setPitch(0.8f) // Tiefer, beruhigender Pitch
             }
         }
+        tts = textToSpeechInstance
+
         onDispose {
-            tts.value?.stop()
-            tts.value?.shutdown()
+            textToSpeechInstance?.stop()
+            textToSpeechInstance?.shutdown()
         }
     }
 
     LaunchedEffect(speechRate) {
-        tts.value?.setSpeechRate(speechRate * 0.65f)
+        tts?.setSpeechRate(speechRate * 0.65f)
     }
 
-    DisposableEffect(Unit) {
-        mediaPlayer.value = MediaPlayer.create(context, R.raw.ambientpian).apply {
+    DisposableEffect(context) {
+        val player = MediaPlayer.create(context, R.raw.ambientpian).apply {
             isLooping = true
             setVolume(0.3f, 0.3f)
         }
+        mediaPlayer.value = player
+
         onDispose {
-            mediaPlayer.value?.stop()
-            mediaPlayer.value?.release()
+            player.stop()
+            player.release()
         }
     }
 
@@ -87,7 +91,7 @@ fun SleepAidScreen(
         if (isMeditating) {
             while (isMeditating) {
                 val text = affirmations.random()
-                tts.value?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
                 delay(15000) // Alle 15 Sekunden eine Affirmation
             }
         }
@@ -114,7 +118,7 @@ fun SleepAidScreen(
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val random = Random(42) // Konsistente Sterne
+            val random = Random(42) // Konsistente Sternen-Positionen
             repeat(100) {
                 val x = random.nextFloat() * size.width
                 val y = random.nextFloat() * size.height
@@ -132,22 +136,25 @@ fun SleepAidScreen(
             verticalArrangement = Arrangement.spacedBy(32.dp)
         ) {
             Icon(
-                Icons.Default.NightsStay,
+                imageVector = Icons.Default.NightsStay,
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
                 tint = Color(0xFFFFD166)
             )
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
                     text = "Zeit für Ruhe",
-                    fontSize = 32.sp,
+                    style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
                 Text(
                     text = "Lass den Tag sanft ausklingen.",
-                    fontSize = 16.sp,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = Color.White.copy(alpha = 0.7f),
                     fontStyle = FontStyle.Italic
                 )
@@ -166,14 +173,23 @@ fun SleepAidScreen(
                     // Meditation Control
                     Button(
                         onClick = { isMeditating = !isMeditating },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isMeditating) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                        )
+                        ),
+                        shape = MaterialTheme.shapes.medium
                     ) {
-                        Icon(if (isMeditating) Icons.Default.Stop else Icons.Default.PlayArrow, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (isMeditating) "Meditation stoppen" else "Sanfte Affirmationen starten")
+                        Icon(
+                            imageVector = if (isMeditating) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = null
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = if (isMeditating) "Meditation stoppen" else "Sanfte Affirmationen starten",
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     }
 
                     // Music Control
@@ -182,21 +198,30 @@ fun SleepAidScreen(
                             isPlayingMusic = !isPlayingMusic
                             if (isPlayingMusic) mediaPlayer.value?.start() else mediaPlayer.value?.pause()
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        shape = MaterialTheme.shapes.medium
                     ) {
-                        Icon(if (isPlayingMusic) Icons.Default.MusicOff else Icons.Default.MusicNote, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (isPlayingMusic) "Musik aus" else "Beruhigende Klänge an")
+                        Icon(
+                            imageVector = if (isPlayingMusic) Icons.Default.MusicOff else Icons.Default.MusicNote,
+                            contentDescription = null
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = if (isPlayingMusic) "Musik aus" else "Beruhigende Klänge an",
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     }
                 }
             }
 
             if (isMeditating) {
                 Text(
-                    "Atme ganz ruhig ein und aus...",
-                    color = Color.White,
-                    fontSize = 18.sp,
+                    text = "Atme ganz ruhig ein und aus...",
+                    color = Color.White.copy(alpha = 0.9f),
+                    style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )

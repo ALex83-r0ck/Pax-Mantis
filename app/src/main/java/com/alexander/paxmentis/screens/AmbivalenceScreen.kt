@@ -1,13 +1,13 @@
 package com.alexander.paxmentis.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,11 +17,11 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 fun AmbivalenceScreen() {
     var isLocked by remember { mutableStateOf(true) }
+    var showGroundingStep by remember { mutableStateOf(false) }
     var pros by remember { mutableStateOf("") }
     var cons by remember { mutableStateOf("") }
 
@@ -42,95 +42,194 @@ fun AmbivalenceScreen() {
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         Text(
-            "Entscheidungs-Check",
-            fontSize = 28.sp,
+            text = "Entscheidungs-Check",
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
 
         if (isLocked) {
-            // CRISIS LOCK MODE
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                elevation = CardDefaults.cardElevation(8.dp)
+            CrisisLockCard(
+                showGrounding = showGroundingStep,
+                onToggleGrounding = { showGroundingStep = !showGroundingStep },
+                onUnlock = { isLocked = false }
+            )
+        } else {
+            FaktencheckContent(
+                pros = pros,
+                onProsChange = { pros = it },
+                cons = cons,
+                onConsChange = { cons = it },
+                onResetLock = { isLocked = true; showGroundingStep = false },
+                onSave = {
+                    // TODO: Logik zum Speichern der Pro/Contra-Liste implementieren
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+    }
+}
+
+@Composable
+private fun CrisisLockCard(
+    showGrounding: Boolean,
+    onToggleGrounding: () -> Unit,
+    onUnlock: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        ),
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null,
+                modifier = Modifier.size(56.dp)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "AKUTE AMBIVALENZ / NOTMODUS",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Dein Nervensystem meldet aktuell 'Gefahr'. In diesem Zustand übernimmt das emotionale Gehirn (Amygdala) – rationale Entscheidungen sind jetzt biologisch blockiert.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Evidenzbasierter Mikro-Schritt zur Regulation statt harter Blockade
+            OutlinedButton(
+                onClick = onToggleGrounding,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
             ) {
+                Text(if (showGrounding) "Erdungsübung verbergen" else "Kurze Erdung (3 Atemzüge)")
+            }
+
+            AnimatedVisibility(visible = showGrounding) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        .padding(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(64.dp))
-                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "CRISIS-LOCK AKTIV",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center
+                        text = "1. Spüre deine Füße auf dem Boden.\n2. Atme 4 Sekunden tief ein, 6 Sekunden lang aus.\n3. Erlaube dem Drang, jetzt sofort handeln zu müssen, für 5 Minuten da zu sein, ohne ihm zu folgen.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Start
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Du bist gerade im Überlebensmodus. Dein Gehirn ist auf 'Gefahr' programmiert, nicht auf 'Logik'.",
-                        textAlign = TextAlign.Center,
-                        fontSize = 15.sp
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "WIR TREFFEN DIESE ENTSCHEIDUNG ERST IN 24 STUNDEN.",
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = { isLocked = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text("Ich bin jetzt ruhig (Sperre lösen)")
-                    }
                 }
             }
-        } else {
-            // FAKTEN-CHECK MODE
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
-                "Lass uns die Fakten sortieren.",
-                fontSize = 16.sp,
-                fontStyle = FontStyle.Italic
+                text = "Empfehlung: Gib dir 24 Stunden, bevor du endgültig handelst.",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onErrorContainer
             )
 
-            OutlinedTextField(
-                value = pros,
-                onValueChange = { pros = it },
-                label = { Text("Was spricht DAFÜR? (Kurzfristig & Langfristig)") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 4
-            )
+            Spacer(modifier = Modifier.height(20.dp))
 
-            OutlinedTextField(
-                value = cons,
-                onValueChange = { cons = it },
-                label = { Text("Was spricht DAGEGEN? (Konsequenzen)") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 4
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-            ) {
-                Text(
-                    "Frage dich: Würde ich diese Entscheidung auch treffen, wenn ich mich gerade sicher und geliebt fühlen würde?",
-                    modifier = Modifier.padding(16.dp),
-                    fontSize = 14.sp,
-                    fontStyle = FontStyle.Italic,
-                    textAlign = TextAlign.Center
+            Button(
+                onClick = onUnlock,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
                 )
-            }
-            
-            Button(onClick = { /* Speichern oder Logik */ }, modifier = Modifier.fillMaxWidth()) {
-                Text("Gedanken festhalten")
+            ) {
+                Text("Ich habe mich beruhigt & möchte analysieren")
             }
         }
-        
-        Spacer(modifier = Modifier.height(40.dp))
+    }
+}
+
+@Composable
+private fun FaktencheckContent(
+    pros: String,
+    onProsChange: (String) -> Unit,
+    cons: String,
+    onConsChange: (String) -> Unit,
+    onResetLock: () -> Unit,
+    onSave: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Lass uns die Fakten sortieren.",
+            style = MaterialTheme.typography.bodyLarge,
+            fontStyle = FontStyle.Italic
+        )
+        TextButton(onClick = onResetLock) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Sperre reaktivieren", style = MaterialTheme.typography.labelSmall)
+        }
+    }
+
+    OutlinedTextField(
+        value = pros,
+        onValueChange = onProsChange,
+        label = { Text("Was spricht DAFÜR? (Langfristiger Nutzen)") },
+        modifier = Modifier.fillMaxWidth(),
+        minLines = 4
+    )
+
+    OutlinedTextField(
+        value = cons,
+        onValueChange = onConsChange,
+        label = { Text("Was spricht DAGEGEN? (Realistische Risiken)") },
+        modifier = Modifier.fillMaxWidth(),
+        minLines = 4
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        )
+    ) {
+        Text(
+            text = "Wert-Kompass: Dient diese Entscheidung deinem langfristigen Wachstum oder dient sie nur der kurzfristigen Schmerzlinderung (Vermeidung)?",
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            fontStyle = FontStyle.Italic,
+            textAlign = TextAlign.Center
+        )
+    }
+
+    Button(
+        onClick = onSave,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Gedanken strukturiert festhalten")
     }
 }

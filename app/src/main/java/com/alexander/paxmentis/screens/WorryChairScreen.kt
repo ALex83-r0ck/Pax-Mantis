@@ -1,8 +1,6 @@
 package com.alexander.paxmentis.screens
 
 import android.speech.tts.TextToSpeech
-import android.widget.Toast
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.isSpecified
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alexander.paxmentis.data.UserPreferences
 import com.alexander.paxmentis.data.WorryEntry
@@ -38,26 +36,27 @@ fun WorryChairScreen(
     var reason by remember { mutableStateOf("") }
     var worstCase by remember { mutableStateOf("") }
     var solution by remember { mutableStateOf("") }
-    
+
     val entries by viewModel.entries.collectAsState()
-    val nickname by viewModel.nickname.collectAsState()
     val context = LocalContext.current
-    
+
     var editEntry by remember { mutableStateOf<WorryEntry?>(null) }
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    var isRecordingMode by remember { mutableStateOf(false) }
     val speechRate by userPreferences.speechRateFlow.collectAsState()
 
-    DisposableEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
+    DisposableEffect(context) {
+        var textToSpeechInstance: TextToSpeech? = null
+        textToSpeechInstance = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.GERMAN
-                tts?.setPitch(0.9f)
+                textToSpeechInstance?.language = Locale.GERMAN
+                textToSpeechInstance?.setPitch(0.9f)
             }
         }
+        tts = textToSpeechInstance
+
         onDispose {
-            tts?.stop()
-            tts?.shutdown()
+            textToSpeechInstance?.stop()
+            textToSpeechInstance?.shutdown()
         }
     }
 
@@ -80,33 +79,45 @@ fun WorryChairScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(24.dp)
                 .imePadding(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
-                Text(
-                    text = "Dein Sorgenstuhl",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Ein Ort, um Gedanken abzuladen und Klarheit zu finden.",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "Dein Sorgenstuhl",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Ein Ort, um Gedanken abzuladen und Klarheit zu finden.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)),
+                    shape = MaterialTheme.shapes.large
                 ) {
+                    val bodyMediumStyle = MaterialTheme.typography.bodyMedium
+                    val safeLineHeight = if (bodyMediumStyle.lineHeight.isSpecified) {
+                        bodyMediumStyle.lineHeight * 1.2f
+                    } else {
+                        androidx.compose.ui.unit.TextUnit.Unspecified
+                    }
+
                     Text(
-                        "Schreibe auf, was dich belastet. Wir schauen es uns gemeinsam an, Schritt für Schritt.",
-                        modifier = Modifier.padding(16.dp),
-                        fontSize = 14.sp,
-                        fontStyle = FontStyle.Italic
+                        text = "Schreibe auf, was dich belastet. Wir schauen es uns gemeinsam an, Schritt für Schritt.",
+                        modifier = Modifier.padding(20.dp),
+                        style = bodyMediumStyle,
+                        fontStyle = FontStyle.Italic,
+                        lineHeight = safeLineHeight
                     )
                 }
             }
@@ -168,21 +179,26 @@ fun WorryChairScreen(
                             tts?.speak("Danke, dass du das geteilt hast. Du hast es hier abgelegt.", TextToSpeech.QUEUE_FLUSH, null, null)
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = MaterialTheme.shapes.medium
                 ) {
-                    Icon(Icons.Default.CloudDone, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Gedanken ablegen", fontSize = 18.sp)
+                    Icon(imageVector = Icons.Default.CloudDone, contentDescription = null)
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = "Gedanken ablegen",
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             }
 
             item {
                 Text(
                     text = "Vergangene Gedanken",
-                    fontSize = 22.sp,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 16.dp)
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
                 )
             }
 
@@ -208,7 +224,6 @@ fun WorryChairScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorryInputSection(
     label: String,
@@ -223,9 +238,17 @@ fun WorryInputSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
             IconButton(onClick = onHelpClick) {
-                Icon(Icons.Default.HelpOutline, contentDescription = "Hilfe", tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    imageVector = Icons.Default.HelpOutline,
+                    contentDescription = "Hilfe",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
         OutlinedTextField(
@@ -233,7 +256,8 @@ fun WorryInputSection(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text(placeholder) },
-            shape = RoundedCornerShape(12.dp)
+            shape = MaterialTheme.shapes.medium,
+            textStyle = MaterialTheme.typography.bodyLarge
         )
     }
 }
@@ -246,33 +270,76 @@ fun WorryEntryCard(
 ) {
     val dateFormat = remember { SimpleDateFormat("dd. MMMM yyyy", Locale.GERMAN) }
     val formattedDate = dateFormat.format(Date(entry.date))
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.large
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = formattedDate, fontSize = 12.sp, color = MaterialTheme.colorScheme.outline)
-                Row {
-                    IconButton(onClick = { onEdit(entry) }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(
+                        onClick = { onEdit(entry) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
-                    Spacer(Modifier.width(8.dp))
-                    IconButton(onClick = { onDelete(entry) }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                    IconButton(
+                        onClick = { onDelete(entry) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Text(text = entry.worry ?: "", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+            Text(
+                text = entry.worry ?: "",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
             if (!entry.solution.isNullOrBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Lightbulb, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.width(4.dp))
-                    Text(text = entry.solution!!, fontSize = 14.sp, fontStyle = FontStyle.Italic)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lightbulb,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = entry.solution!!,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontStyle = FontStyle.Italic,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
@@ -292,25 +359,60 @@ fun EditWorryDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Gedanken bearbeiten") },
+        title = {
+            Text(
+                text = "Gedanken bearbeiten",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
         text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedTextField(value = worry, onValueChange = { worry = it }, label = { Text("Sorge") })
-                OutlinedTextField(value = reason, onValueChange = { reason = it }, label = { Text("Grund") })
-                OutlinedTextField(value = worstCase, onValueChange = { worstCase = it }, label = { Text("Worst Case") })
-                OutlinedTextField(value = solution, onValueChange = { solution = it }, label = { Text("Lösung") })
+                OutlinedTextField(
+                    value = worry,
+                    onValueChange = { worry = it },
+                    label = { Text("Sorge") },
+                    shape = MaterialTheme.shapes.medium
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    label = { Text("Grund") },
+                    shape = MaterialTheme.shapes.medium
+                )
+                OutlinedTextField(
+                    value = worstCase,
+                    onValueChange = { worstCase = it },
+                    label = { Text("Worst Case") },
+                    shape = MaterialTheme.shapes.medium
+                )
+                OutlinedTextField(
+                    value = solution,
+                    onValueChange = { solution = it },
+                    label = { Text("Lösung") },
+                    shape = MaterialTheme.shapes.medium
+                )
             }
         },
         confirmButton = {
-            Button(onClick = { 
-                onConfirm(entry.copy(worry = worry, reason = reason, worstCase = worstCase, solution = solution))
-            }) { Text("Speichern") }
+            Button(
+                onClick = {
+                    onConfirm(entry.copy(worry = worry, reason = reason, worstCase = worstCase, solution = solution))
+                },
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("Speichern")
+            }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Abbrechen") }
-        }
+            TextButton(onClick = onDismiss) {
+                Text("Abbrechen")
+            }
+        },
+        shape = MaterialTheme.shapes.extraLarge
     )
 }

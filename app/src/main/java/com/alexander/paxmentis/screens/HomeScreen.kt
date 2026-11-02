@@ -22,7 +22,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.alexander.paxmentis.ui.viewmodels.HomeViewModel
@@ -50,38 +49,64 @@ fun HomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         Text(
             text = "Hallo $nickname ♥️",
-            fontSize = 32.sp,
+            style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center
         )
         Text(
             text = "Deine Werkzeuge für Stabilität.",
-            fontSize = 18.sp,
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.secondary,
             fontStyle = FontStyle.Italic
         )
-        
-        Spacer(modifier = Modifier.height(32.dp))
 
-        // Krisen-Kompass (Highlight)
+        Spacer(modifier = Modifier.height(28.dp))
+
+        // Krisen-Kompass (Highlight / Hero Element)
         Card(
             onClick = { navController.navigate("crisis_compass") },
-            modifier = Modifier.fillMaxWidth().height(120.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Explore, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.White)
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text("KRISEN-KOMPASS", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                        Text("Soforthilfe bei Panik & Angst", fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Explore,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = Color.White
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "KRISEN-KOMPASS",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Soforthilfe bei Panik & Angst",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
                     }
                 }
             }
@@ -89,12 +114,22 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Hauptmodule Grid
-        Text("Alle Module", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Start))
+        // Hauptmodule Grid Titel
+        Text(
+            text = "Alle Module",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(start = 4.dp)
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         // Row 1: Kommunikation & Präsenz
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             QuickActionButton(
                 label = "Neutral-Msg",
                 description = "Sachlich bleiben",
@@ -112,11 +147,14 @@ fun HomeScreen(
                 onClick = { navController.navigate("shared_reality") }
             )
         }
-        
+
         Spacer(modifier = Modifier.height(12.dp))
 
         // Row 2: Entspannung & Fokus
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             QuickActionButton(
                 label = "Atem-Übung",
                 description = "Nervensystem beruhigen",
@@ -136,7 +174,10 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Row 3: Schlaf & System
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             QuickActionButton(
                 label = "Schlafhilfe",
                 description = "Sanft zur Ruhe kommen",
@@ -156,7 +197,10 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Row 4: Psychoedukation
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             QuickActionButton(
                 label = "Wissens-Hub",
                 description = "Psychoedukation & Verständnis",
@@ -165,7 +209,6 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.tertiaryContainer,
                 onClick = { navController.navigate("education") }
             )
-            // Empty space or another button
             Spacer(modifier = Modifier.weight(1f))
         }
 
@@ -177,11 +220,14 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Einen Vorfall melden", fontSize = 16.sp)
+            Icon(imageVector = Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Einen Vorfall melden",
+                style = MaterialTheme.typography.titleMedium
+            )
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
@@ -202,14 +248,33 @@ fun QuickActionButton(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
-            Text(description, fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.1f,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+            )
         }
     }
 }

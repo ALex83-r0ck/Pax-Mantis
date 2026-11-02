@@ -18,9 +18,12 @@ class BiometricPromptManager(
         onError: (String) -> Unit
     ) {
         val manager = BiometricManager.from(activity)
-        val authenticators = if (Build.VERSION.SDK_INT >= 30) {
-            BIOMETRIC_STRONG or DEVICE_CREDENTIAL
-        } else BIOMETRIC_STRONG
+
+        // WICHTIG: Ab Android 11 (API 30) dürfen BIOMETRIC_STRONG und DEVICE_CREDENTIAL
+        // nicht mehr mit ODER (or) kombiniert werden, da dies zu einer IllegalArgumentException führt.
+        // Wir nutzen hier primär Biometrie. Wenn Geräte-Credentials gewünscht sind,
+        // sollte setAllowedAuthenticators(DEVICE_CREDENTIAL) separat verwendet werden.
+        val authenticators = BIOMETRIC_STRONG
 
         when (manager.canAuthenticate(authenticators)) {
             BiometricManager.BIOMETRIC_SUCCESS -> {
@@ -38,6 +41,12 @@ class BiometricPromptManager(
                             super.onAuthenticationError(errorCode, errString)
                             onError(errString.toString())
                         }
+
+                        override fun onAuthenticationFailed() {
+                            super.onAuthenticationFailed()
+                            // Optional: Wird aufgerufen, wenn der Fingerabdruck nicht erkannt wurde,
+                            // aber der Dialog offen bleibt für weitere Versuche.
+                        }
                     }
                 )
 
@@ -45,13 +54,22 @@ class BiometricPromptManager(
                     .setTitle(title)
                     .setDescription(description)
                     .setAllowedAuthenticators(authenticators)
+                    // WICHTIG: Wenn negativeButton text gesetzt wird, darf DEVICE_CREDENTIAL nicht aktiv sein.
+                    .setNegativeButtonText("Abbrechen")
                     .build()
 
                 prompt.authenticate(promptInfo)
             }
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
+                onError("Dieses Gerät unterstützt keine biometrische Authentifizierung.")
+            }
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                onError("Es sind keine biometrischen Daten auf diesem Gerät hinterlegt.")
+            }
             else -> {
-                // Biometrics not available, bypass or show error
-                onSuccess() 
+                // Sicherheits-Fix: Kein stiller Bypass mehr über onSuccess(),
+                // stattdessen sauberer Fehler-Callback, damit ungesicherte Geräte nicht unbemerkt passieren.
+                onError("Biometrische Authentifizierung ist aktuell nicht verfügbar.")
             }
         }
     }

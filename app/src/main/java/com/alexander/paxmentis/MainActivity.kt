@@ -7,25 +7,107 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.EventNote
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Nightlight
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.navigation.compose.*
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.alexander.paxmentis.data.UserPreferences
-import com.alexander.paxmentis.screens.*
+import com.alexander.paxmentis.screens.AmbivalenceScreen
+import com.alexander.paxmentis.screens.BreathingScreen
+import com.alexander.paxmentis.screens.CrisisCompassScreen
+import com.alexander.paxmentis.screens.DepressionHelpScreen
+import com.alexander.paxmentis.screens.EducationScreen
+import com.alexander.paxmentis.screens.GroundingScreen
+import com.alexander.paxmentis.screens.HomeScreen
+import com.alexander.paxmentis.screens.NeutralMessagingScreen
+import com.alexander.paxmentis.screens.NightWatchScreen
+import com.alexander.paxmentis.screens.PanicScreen
+import com.alexander.paxmentis.screens.SafeSpaceScreen
+import com.alexander.paxmentis.screens.SettingsScreen
+import com.alexander.paxmentis.screens.SharedRealityScreen
+import com.alexander.paxmentis.screens.SleepAidScreen
+import com.alexander.paxmentis.screens.TriggerBlockScreen
+import com.alexander.paxmentis.screens.WorryChairScreen
 import com.alexander.paxmentis.security.BiometricPromptManager
 import com.alexander.paxmentis.ui.theme.PaxMentisTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+
+sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
+    data object Home : Screen("home", "Dashboard", Icons.Default.Home)
+    data object CrisisCompass : Screen("crisis_compass", "Krisen-Kompass", Icons.Default.Explore)
+    data object NeutralMessaging : Screen("neutral_messaging", "Neutral-Messaging", Icons.AutoMirrored.Filled.Chat)
+    data object SharedReality : Screen("shared_reality", "Shared Reality", Icons.Default.Security)
+    data object Breathing : Screen("breathing", "Atem-Übung", Icons.Default.Air)
+    data object WorryChair : Screen("worry_chair", "Sorgenstuhl", Icons.AutoMirrored.Filled.EventNote)
+    data object SleepAid : Screen("sleep_aid", "Schlafhilfe", Icons.Default.NightsStay)
+    data object Education : Screen("education", "Wissens-Hub", Icons.AutoMirrored.Filled.MenuBook)
+    data object Settings : Screen("settings", "Einstellungen", Icons.Default.Settings)
+
+    data object Panic : Screen("panic", "Panik", Icons.Default.Warning)
+    data object Grounding54321 : Screen("grounding_54321", "Grounding", Icons.Default.SelfImprovement)
+    data object DepressionHelp : Screen("depression_help", "Depression", Icons.Default.Favorite)
+    data object SafeSpace : Screen("safe_space", "Safe Space", Icons.Default.Shield)
+    data object Ambivalence : Screen("ambivalence", "Ambivalenz", Icons.AutoMirrored.Filled.Help)
+    data object TriggerBlock : Screen("trigger_block", "Trigger Block", Icons.Default.Block)
+    data object NightWatch : Screen("night_watch", "Night Watch", Icons.Default.Nightlight)
+}
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -35,6 +117,8 @@ class MainActivity : AppCompatActivity() {
     private var hasCallPermission by mutableStateOf(false)
     private var isUnlocked by mutableStateOf(false)
 
+    private var pendingNavigateRoute: String? = null
+    
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -45,7 +129,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         System.loadLibrary("sqlcipher")
         checkPermissions()
-        
+
         setContent {
             PaxMentisTheme {
                 Surface(
@@ -55,12 +139,25 @@ class MainActivity : AppCompatActivity() {
                     if (isUnlocked) {
                         AppNavigation(hasCallPermission, userPreferences)
                     } else {
-                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer))
-                        
-                        LaunchedEffect(Unit) {
-                            delay(1500)
-                            if (!isUnlocked) {
-                                isUnlocked = true
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.Security,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Pax Mentis ist geschützt",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             }
                         }
                     }
@@ -77,7 +174,7 @@ class MainActivity : AppCompatActivity() {
             title = "Pax Mentis Entsperren",
             description = "Bitte authentifiziere Dich.",
             onSuccess = { isUnlocked = true },
-            onError = { /* Fallback */ }
+            onError = { /* Log or show error */ }
         )
     }
 
@@ -99,127 +196,48 @@ fun AppNavigation(hasCallPermission: Boolean, userPreferences: UserPreferences) 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    val drawerItems = remember {
+        listOf(
+            Screen.Home,
+            Screen.CrisisCompass,
+            null,
+            Screen.NeutralMessaging,
+            Screen.SharedReality,
+            Screen.Breathing,
+            Screen.WorryChair,
+            Screen.SleepAid,
+            Screen.Education,
+            null,
+            Screen.Settings
+        )
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(Modifier.height(16.dp))
-                Text("Pax Mentis", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-                
-                NavigationItem(
-                    icon = Icons.Default.Home,
-                    label = "Dashboard",
-                    isSelected = currentRoute == "home",
-                    onClick = {
-                        navController.navigate("home") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationItem(
-                    icon = Icons.Default.Explore,
-                    label = "Krisen-Kompass",
-                    isSelected = currentRoute == "crisis_compass",
-                    onClick = {
-                        navController.navigate("crisis_compass") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                NavigationItem(
-                    icon = Icons.AutoMirrored.Filled.Chat,
-                    label = "Neutral-Messaging",
-                    isSelected = currentRoute == "neutral_messaging",
-                    onClick = {
-                        navController.navigate("neutral_messaging") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationItem(
-                    icon = Icons.Default.Security,
-                    label = "Shared Reality",
-                    isSelected = currentRoute == "shared_reality",
-                    onClick = {
-                        navController.navigate("shared_reality") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationItem(
-                    icon = Icons.Default.Air,
-                    label = "Atem-Übung",
-                    isSelected = currentRoute == "breathing",
-                    onClick = {
-                        navController.navigate("breathing") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationItem(
-                    icon = Icons.AutoMirrored.Filled.EventNote,
-                    label = "Sorgenstuhl",
-                    isSelected = currentRoute == "worry_chair",
-                    onClick = {
-                        navController.navigate("worry_chair") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationItem(
-                    icon = Icons.Default.NightsStay,
-                    label = "Schlafhilfe",
-                    isSelected = currentRoute == "sleep_aid",
-                    onClick = {
-                        navController.navigate("sleep_aid") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationItem(
-                    icon = Icons.Default.MenuBook,
-                    label = "Wissens-Hub",
-                    isSelected = currentRoute == "education",
-                    onClick = {
-                        navController.navigate("education") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    }
+                Text(
+                    "Pax Mentis",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                NavigationItem(
-                    icon = Icons.Default.Settings,
-                    label = "Einstellungen",
-                    isSelected = currentRoute == "settings",
-                    onClick = {
-                        navController.navigate("settings") {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
+                drawerItems.forEach { screen ->
+                    if (screen == null) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    } else {
+                        NavigationItem(
+                            icon = screen.icon,
+                            label = screen.label,
+                            isSelected = currentRoute == screen.route,
+                            onClick = {
+                                navigateTo(navController, screen.route, drawerState, scope)
+                            }
+                        )
                     }
-                )
+                }
             }
         }
     ) {
@@ -241,33 +259,49 @@ fun AppNavigation(hasCallPermission: Boolean, userPreferences: UserPreferences) 
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = "home",
+                startDestination = Screen.Home.route,
                 modifier = Modifier.padding(innerPadding)
             ) {
-                composable("home") { HomeScreen(navController) }
-                composable("crisis_compass") { CrisisCompassScreen(navController) }
-                composable("neutral_messaging") { NeutralMessagingScreen() }
-                composable("shared_reality") { SharedRealityScreen() }
-                composable("panic") { PanicScreen(hasCallPermission, userPreferences) }
-                composable("grounding_54321") { GroundingScreen(userPreferences) }
-                composable("depression_help") { DepressionHelpScreen() }
-                composable("safe_space") { SafeSpaceScreen(userPreferences) }
-                composable("breathing") { BreathingScreen(userPreferences) }
-                composable("worry_chair") { WorryChairScreen(userPreferences) }
-                composable("sleep_aid") { SleepAidScreen(userPreferences) }
-                composable("settings") { SettingsScreen() }
-                composable("education") { EducationScreen() }
-                composable("ambivalence") { AmbivalenceScreen() }
-                composable("trigger_block") { TriggerBlockScreen(onNavigateBack = { navController.popBackStack() }) }
-                composable("night_watch") { NightWatchScreen(userPreferences) }
+                composable(Screen.Home.route) { HomeScreen(navController) }
+                composable(Screen.CrisisCompass.route) { CrisisCompassScreen(navController) }
+                composable(Screen.NeutralMessaging.route) { NeutralMessagingScreen() }
+                composable(Screen.SharedReality.route) { SharedRealityScreen() }
+                composable(Screen.Panic.route) { PanicScreen(hasCallPermission, userPreferences) }
+                composable(Screen.Grounding54321.route) { GroundingScreen(userPreferences) }
+                composable(Screen.DepressionHelp.route) { DepressionHelpScreen() }
+                composable(Screen.SafeSpace.route) { SafeSpaceScreen(userPreferences) }
+                composable(Screen.Breathing.route) { BreathingScreen(userPreferences) }
+                composable(Screen.WorryChair.route) { WorryChairScreen(userPreferences) }
+                composable(Screen.SleepAid.route) { SleepAidScreen(userPreferences) }
+                composable(Screen.Settings.route) { SettingsScreen() }
+                composable(Screen.Education.route) { EducationScreen() }
+                composable(Screen.Ambivalence.route) { AmbivalenceScreen() }
+                composable(Screen.TriggerBlock.route) { TriggerBlockScreen(onNavigateBack = { navController.popBackStack() }) }
+                composable(Screen.NightWatch.route) { NightWatchScreen(userPreferences) }
             }
         }
     }
 }
 
+private fun navigateTo(
+    navController: NavHostController,
+    route: String,
+    drawerState: DrawerState,
+    scope: CoroutineScope
+) {
+    navController.navigate(route) {
+        popUpTo(navController.graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+    scope.launch { drawerState.close() }
+}
+
 @Composable
 fun NavigationItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit

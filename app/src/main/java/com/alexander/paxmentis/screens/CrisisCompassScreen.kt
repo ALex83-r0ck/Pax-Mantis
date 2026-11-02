@@ -15,15 +15,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import java.util.*
+import com.alexander.paxmentis.Screen
+import java.util.Calendar
 
 @Composable
 fun CrisisCompassScreen(navController: NavController) {
-    val calendar = Calendar.getInstance()
-    val hour = calendar.get(Calendar.HOUR_OF_DAY)
-    val isNight = hour >= 22 || hour < 6
+    // Dynamische Prüfung auf Nachtzeit (22:00 bis 06:00 Uhr)
+    val isNight = remember {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        hour >= 22 || hour < 6
+    }
 
     Column(
         modifier = Modifier
@@ -38,21 +40,28 @@ fun CrisisCompassScreen(navController: NavController) {
                 )
             )
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Krisen-Kompass",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = "Was fühlst du gerade?",
-            fontSize = 18.sp,
-            modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
-            color = MaterialTheme.colorScheme.secondary
-        )
+        Column(
+            modifier = Modifier.padding(bottom = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Krisen-Kompass",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "Was fühlst du gerade?",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 8.dp),
+                color = MaterialTheme.colorScheme.secondary
+            )
+        }
 
+        // Dynamischer Nachtwache-Eintrag (Fokus auf Einsamkeit & Gedankenkreisen)
         if (isNight) {
             CrisisOptionCard(
                 title = "Nachtwache",
@@ -60,9 +69,8 @@ fun CrisisCompassScreen(navController: NavController) {
                 icon = Icons.Default.Bedtime,
                 color = Color(0xFF05082E),
                 textColor = Color.White,
-                onClick = { navController.navigate("night_watch") }
+                onClick = { navController.navigate(Screen.NightWatch.route) }
             )
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
         CrisisOptionCard(
@@ -70,50 +78,42 @@ fun CrisisCompassScreen(navController: NavController) {
             description = "Ich habe Todesangst oder mein Herz rast.",
             icon = Icons.Default.Warning,
             color = MaterialTheme.colorScheme.errorContainer,
-            onClick = { navController.navigate("panic") }
+            onClick = { navController.navigate(Screen.Panic.route) }
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         CrisisOptionCard(
             title = "Impuls / Schwere Wahl",
             description = "Ich will gerade eine radikale Entscheidung treffen.",
             icon = Icons.Default.Lock,
             color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
-            onClick = { navController.navigate("ambivalence") }
+            onClick = { navController.navigate(Screen.Ambivalence.route) }
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         CrisisOptionCard(
             title = "Dissoziation / Flashbacks",
             description = "Ich fühle mich nicht real oder bin weggetreten.",
             icon = Icons.Default.Visibility,
             color = MaterialTheme.colorScheme.tertiaryContainer,
-            onClick = { navController.navigate("grounding_54321") }
+            onClick = { navController.navigate(Screen.Grounding54321.route) }
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         CrisisOptionCard(
             title = "Social Media Drang",
             description = "Ich will mich gerade im Internet verlieren.",
             icon = Icons.Default.Block,
             color = MaterialTheme.colorScheme.surfaceVariant,
-            onClick = { navController.navigate("trigger_block") }
+            onClick = { navController.navigate(Screen.TriggerBlock.route) }
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         CrisisOptionCard(
             title = "Depression / Leere",
             description = "Ich bin am Boden zerstört oder antriebslos.",
             icon = Icons.Default.Cloud,
             color = MaterialTheme.colorScheme.secondaryContainer,
-            onClick = { navController.navigate("depression_help") }
+            onClick = { navController.navigate(Screen.DepressionHelp.route) }
         )
-        
-        Spacer(modifier = Modifier.height(40.dp))
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -129,18 +129,38 @@ fun CrisisOptionCard(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = color)
+        colors = CardDefaults.cardColors(
+            containerColor = color,
+            contentColor = if (textColor != Color.Unspecified) textColor else LocalContentColor.current
+        )
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val tintColor = if (textColor != Color.Unspecified) textColor else LocalContentColor.current
-            Icon(icon, contentDescription = null, modifier = Modifier.size(40.dp), tint = tintColor)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = tintColor
+            )
             Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = textColor)
-                Text(description, fontSize = 14.sp, color = if (textColor != Color.Unspecified) textColor.copy(alpha = 0.8f) else Color.Unspecified)
+            Column(
+                modifier = Modifier.weight(1f) // Verhindert Text-Overflow bei langen Beschreibungen
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (textColor != Color.Unspecified) textColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

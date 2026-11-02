@@ -57,6 +57,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -83,6 +84,7 @@ dependencies {
     // Security
     implementation(libs.sqlcipher)
     implementation(libs.androidx.biometric)
+    implementation(libs.androidx.security.crypto)
 
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.kotlinx.coroutines.android)

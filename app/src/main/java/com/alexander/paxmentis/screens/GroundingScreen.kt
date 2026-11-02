@@ -15,7 +15,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.alexander.paxmentis.data.UserPreferences
 import java.util.Locale
 
@@ -44,18 +43,22 @@ fun GroundingScreen(
         1 to Icons.Default.Restaurant
     )
 
-    DisposableEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
+    DisposableEffect(context) {
+        var textToSpeechInstance: TextToSpeech? = null
+        textToSpeechInstance = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(speechRate)
-                tts?.setPitch(0.9f)
-                tts?.speak(instructions[5], TextToSpeech.QUEUE_FLUSH, null, null)
+                textToSpeechInstance?.language = Locale.GERMAN
+                textToSpeechInstance?.setSpeechRate(speechRate)
+                textToSpeechInstance?.setPitch(0.9f) // Beruhigendere Stimmlage
+                // Sofortigen Start für Schritt 5 triggern
+                textToSpeechInstance?.speak(instructions[5], TextToSpeech.QUEUE_FLUSH, null, null)
             }
         }
+        tts = textToSpeechInstance
+
         onDispose {
-            tts?.stop()
-            tts?.shutdown()
+            textToSpeechInstance?.stop()
+            textToSpeechInstance?.shutdown()
         }
     }
 
@@ -63,6 +66,7 @@ fun GroundingScreen(
         tts?.setSpeechRate(speechRate)
     }
 
+    // Sprachausgabe bei jedem Schrittwechsel
     LaunchedEffect(step) {
         if (step in 1..5) {
             tts?.speak(instructions[step], TextToSpeech.QUEUE_FLUSH, null, null)
@@ -84,35 +88,36 @@ fun GroundingScreen(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text(
-                "Erdung (5-4-3-2-1)",
-                fontSize = 24.sp,
+                text = "Erdung (5-4-3-2-1)",
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.tertiary
             )
-            
-            Spacer(modifier = Modifier.height(40.dp))
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Icon(
-                icons[step] ?: Icons.Default.Info,
+                imageVector = icons[step] ?: Icons.Default.Info,
                 contentDescription = null,
                 modifier = Modifier.size(80.dp),
                 tint = MaterialTheme.colorScheme.tertiary
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = instructions[step] ?: "Fertig!",
-                fontSize = 22.sp,
+                style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Medium,
-                lineHeight = 32.sp
+                lineHeight = MaterialTheme.typography.headlineSmall.lineHeight * 1.2f
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             if (step > 1) {
                 Button(
@@ -120,18 +125,32 @@ fun GroundingScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                 ) {
-                    Text("Erledigt / Nächster Schritt")
+                    Text(
+                        text = "Erledigt / Nächster Schritt",
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             } else {
-                Text(
-                    "Gut gemacht. Du bist jetzt hier im Moment.",
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = { step = 5 }) {
-                    Text("Noch einmal von vorn")
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Gut gemacht. Du bist jetzt hier im Moment.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Button(
+                        onClick = { step = 5 },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Noch einmal von vorn",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                 }
             }
         }

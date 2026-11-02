@@ -5,9 +5,14 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "worry_entries")
 data class WorryEntry(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+
     val date: Long,
-    val worry: String? = null,
+
+    // Die Kern-Sorge sollte im Normalfall vorhanden sein
+    val worry: String,
+
     val reason: String? = null,
     val worstCase: String? = null,
     val solution: String? = null

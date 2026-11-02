@@ -1,4 +1,4 @@
-package com.alexander.paxmentis
+package com.alexander.paxmentis.widget
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -10,6 +10,7 @@ import com.alexander.paxmentis.MainActivity
 import com.alexander.paxmentis.R
 
 class PanicWidget : AppWidgetProvider() {
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -20,23 +21,30 @@ class PanicWidget : AppWidgetProvider() {
         }
     }
 
-    private fun updateAppWidget(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetId: Int
-    ) {
-        val views = RemoteViews(context.packageName, R.layout.widget_panic)
-        val intent = Intent(context, MainActivity::class.java).apply {
-            putExtra("navigate_to", "panic")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    companion object {
+        fun updateAppWidget(
+            context: Context,
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int
+        ) {
+            val views = RemoteViews(context.packageName, R.layout.widget_panic)
+
+            // Intent mit klarer Aktion und Parametern
+            val intent = Intent(context, MainActivity::class.java).apply {
+                action = "ACTION_NAVIGATE_PANIC"
+                putExtra("navigate_to", "panic")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                appWidgetId, // Eindeutige RequestCode pro Widget-Instanz
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            views.setOnClickPendingIntent(R.id.panic_button, pendingIntent)
+            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            appWidgetId, // Unique requestCode per widget instance
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        views.setOnClickPendingIntent(R.id.panic_button, pendingIntent)
-        appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 }

@@ -5,24 +5,21 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.isSpecified
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.alexander.paxmentis.ui.viewmodels.PanicViewModel
 
@@ -31,6 +28,11 @@ fun SharedRealityScreen(
     viewModel: PanicViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+
+    // Sicherer Zugriff auf die Schriftgröße mit Fallback
+    val bodyLargeStyle = MaterialTheme.typography.bodyLarge
+    val bodyMediumStyle = MaterialTheme.typography.bodyMedium
+
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     var showSuccess by remember { mutableStateOf(false) }
@@ -51,27 +53,35 @@ fun SharedRealityScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            Icons.Default.Security,
+            imageVector = Icons.Default.Security,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
             tint = MaterialTheme.colorScheme.primary
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            "Shared Reality",
-            fontSize = 32.sp,
+            text = "Shared Reality",
+            style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
-        
+
+        // Zeilenhöhe sicher berechnen
+        val bodyLargeLineHeight = if (bodyLargeStyle.lineHeight.isSpecified) {
+            bodyLargeStyle.lineHeight * 1.2f
+        } else {
+            androidx.compose.ui.unit.TextUnit.Unspecified
+        }
+
         Text(
-            "Präsenz signalisieren, ohne zu reden. Kurze Statusmeldung an $emergencyContact senden.",
-            fontSize = 16.sp,
+            text = "Präsenz signalisieren, ohne zu reden. Kurze Statusmeldung an $emergencyContact senden.",
+            style = bodyLargeStyle,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp, bottom = 48.dp),
-            color = MaterialTheme.colorScheme.secondary
+            modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
+            color = MaterialTheme.colorScheme.secondary,
+            lineHeight = bodyLargeLineHeight
         )
 
         Button(
@@ -80,40 +90,74 @@ fun SharedRealityScreen(
                 sendWhatsApp(context, emergencyNumber, message)
                 showSuccess = true
             },
-            modifier = Modifier.fillMaxWidth().height(100.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(90.dp),
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(32.dp))
+            Icon(
+                imageVector = Icons.Default.NotificationsActive,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp)
+            )
             Spacer(modifier = Modifier.width(16.dp))
-            Text("Ich halte die Stellung", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Ich halte die Stellung",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         if (showSuccess) {
-            Text(
-                "Meldung wurde vorbereitet / gesendet.",
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium
-            )
-            TextButton(onClick = { showSuccess = false }) {
-                Text("OK")
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "Meldung wurde vorbereitet / gesendet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
+                TextButton(onClick = { showSuccess = false }) {
+                    Text(
+                        text = "OK",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
         }
-        
-        Spacer(modifier = Modifier.height(48.dp))
-        
+
+        Spacer(modifier = Modifier.height(32.dp))
+
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            shape = MaterialTheme.shapes.large
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Was das bewirkt:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            val bodyMediumLineHeight = if (bodyMediumStyle.lineHeight.isSpecified) {
+                bodyMediumStyle.lineHeight * 1.2f
+            } else {
+                androidx.compose.ui.unit.TextUnit.Unspecified
+            }
+
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
-                    "Es signalisiert Stabilität und Präsenz, ohne eine direkte Unterhaltung führen zu müssen. Das nimmt den Druck aus der Situation.",
-                    fontSize = 13.sp,
-                    fontStyle = FontStyle.Italic
+                    text = "Was das bewirkt:",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Es signalisiert Stabilität und Präsenz, ohne eine direkte Unterhaltung führen zu müssen. Das nimmt den Druck aus der Situation.",
+                    style = bodyMediumStyle,
+                    fontStyle = FontStyle.Italic,
+                    lineHeight = bodyMediumLineHeight
                 )
             }
         }

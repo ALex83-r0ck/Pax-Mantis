@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,73 +12,90 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 fun TriggerBlockScreen(onNavigateBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212)), // Sehr dunkel
+            .background(Color(0xFF121212)), // Bewusstes, tiefes Dunkel für den Stopp-Effekt
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp),
+            modifier = Modifier.padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Icon(
-                Icons.Default.Block,
+                imageVector = Icons.Default.Block,
                 contentDescription = null,
-                modifier = Modifier.size(100.dp),
+                modifier = Modifier.size(96.dp),
                 tint = MaterialTheme.colorScheme.error
             )
 
             Text(
-                "STOPP!",
-                fontSize = 40.sp,
+                text = "STOPP!",
+                style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White
             )
 
             Text(
-                "Willst du gerade wirklich auf Social Media scrollen?",
-                fontSize = 20.sp,
+                text = "Willst du gerade wirklich auf Social Media scrollen?",
+                style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center,
-                color = Color.White.copy(alpha = 0.8f)
+                color = Color.White.copy(alpha = 0.85f),
+                lineHeight = MaterialTheme.typography.titleLarge.lineHeight * 1.2f
             )
 
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
-                modifier = Modifier.fillMaxWidth()
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large
             ) {
                 Text(
-                    "Das endlose Scrollen (Doomscrolling) wird deine Unruhe gerade nur verstärken. Es triggert Vergleiche und Angst.",
-                    modifier = Modifier.padding(16.dp),
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
+                    text = "Das endlose Scrollen (Doomscrolling) wird deine Unruhe gerade nur verstärken. Es triggert Vergleiche und Angst.",
+                    modifier = Modifier.padding(20.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Center,
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.3f
                 )
             }
 
             Text(
-                "Lege das Handy für 5 Minuten weg. Atme. Geh zum Sorgenstuhl.",
-                fontSize = 16.sp,
+                text = "Lege das Handy für 5 Minuten weg. Atme tief durch.",
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
             Button(
                 onClick = onNavigateBack,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = MaterialTheme.shapes.medium
             ) {
-                Text("Okay, ich mache eine Atemübung")
+                Text(
+                    text = "Okay, ich mache eine Atemübung",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
-            
-            TextButton(onClick = { /* User insistiert */ }) {
-                Text("Ich weiß was ich tue (Trotzdem weiter)", color = Color.White.copy(alpha = 0.4f))
+
+            TextButton(
+                onClick = { /* User insistiert bewusst */ },
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Text(
+                    text = "Ich weiß, was ich tue (Trotzdem weiter)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.4f)
+                )
             }
         }
     }

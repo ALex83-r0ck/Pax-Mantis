@@ -12,9 +12,13 @@ class WorryRepository @Inject constructor(
 ) {
     fun getAllEntries(): Flow<List<WorryEntry>> = worryEntryDao.getAll()
 
-    suspend fun insertEntry(entry: WorryEntry) = worryEntryDao.insert(entry)
+    suspend fun getEntryById(id: Int): WorryEntry? = worryEntryDao.getById(id)
+
+    suspend fun insertEntry(entry: WorryEntry): Long = worryEntryDao.insert(entry)
 
     suspend fun updateEntry(entry: WorryEntry) = worryEntryDao.update(entry)
 
     suspend fun deleteEntry(entry: WorryEntry) = worryEntryDao.delete(entry)
+
+    suspend fun deleteEntryById(id: Int) = worryEntryDao.deleteById(id)
 }
