@@ -83,6 +83,8 @@ dependencies {
     // Security
     implementation(libs.sqlcipher)
     implementation(libs.androidx.biometric)
+    // Nur zum Lesen des DB-Schlüssels aus dem Zwischenstand (EncryptedSharedPreferences)
+    implementation(libs.androidx.security.crypto)
 
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.kotlinx.coroutines.android)
