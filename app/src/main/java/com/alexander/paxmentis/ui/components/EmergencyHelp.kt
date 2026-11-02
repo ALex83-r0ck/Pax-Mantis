@@ -22,7 +22,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private const val TELEFONSEELSORGE_CHAT_URL = "https://online.telefonseelsorge.de"
+const val TELEFONSEELSORGE_NUMBER = "08001110111"
+const val TELEFONSEELSORGE_CHAT_URL = "https://online.telefonseelsorge.de"
 
 /**
  * Notruf-Optionen, die auf Notfall-Screens IMMER sichtbar sind – nicht erst nach einer Übung.
@@ -60,7 +61,7 @@ fun EmergencyHelp(
         }
 
         OutlinedButton(
-            onClick = { dial(context, "08001110111") },
+            onClick = { dial(context, TELEFONSEELSORGE_NUMBER) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Telefonseelsorge 0800 111 0 111 (kostenlos, 24/7)", textAlign = TextAlign.Center)
@@ -117,7 +118,7 @@ fun dial(context: Context, number: String) {
     }
 }
 
-private fun openUrl(context: Context, url: String) {
+fun openUrl(context: Context, url: String) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     } catch (e: ActivityNotFoundException) {

@@ -17,6 +17,8 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     val nickname: StateFlow<String> = userPreferences.nicknameFlow
+    val emergencyContact: StateFlow<String> = userPreferences.emergencyContactFlow
+    val emergencyNumber: StateFlow<String> = userPreferences.emergencyNumberFlow
 
     fun addQuickEntry(onResult: (saved: Boolean) -> Unit) {
         viewModelScope.launch {
