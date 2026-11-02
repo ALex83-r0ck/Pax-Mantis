@@ -1,8 +1,10 @@
 package com.alexander.paxmentis.screens
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.alexander.paxmentis.domain.normalizeWhatsAppNumber
 import com.alexander.paxmentis.ui.viewmodels.PanicViewModel
 
 @Composable
@@ -33,6 +36,7 @@ fun SharedRealityScreen(
     val context = LocalContext.current
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
     val emergencyContact by viewModel.emergencyContact.collectAsState()
+    val nickname by viewModel.nickname.collectAsState()
     var showSuccess by remember { mutableStateOf(false) }
 
     Column(
@@ -67,18 +71,26 @@ fun SharedRealityScreen(
         )
         
         Text(
-            "Präsenz signalisieren, ohne zu reden. Kurze Statusmeldung an $emergencyContact senden.",
+            "Präsenz signalisieren, ohne zu reden. Kurze Statusmeldung an ${emergencyContact.ifBlank { "deine Vertrauensperson" }} senden.",
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp, bottom = 48.dp),
             color = MaterialTheme.colorScheme.secondary
         )
 
+        if (emergencyNumber.isBlank()) {
+            Text(
+                "Noch keine Vertrauensperson hinterlegt. Trag sie zuerst in den Einstellungen ein.",
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
         Button(
+            enabled = emergencyNumber.isNotBlank(),
             onClick = {
-                val message = "Alexander hier. Ich halte die Stellung. Ich bin präsent und sorge für Sicherheit."
-                sendWhatsApp(context, emergencyNumber, message)
-                showSuccess = true
+                showSuccess = sendWhatsApp(context, emergencyNumber, statusMessage(nickname))
             },
             modifier = Modifier.fillMaxWidth().height(100.dp),
             shape = RoundedCornerShape(24.dp),
@@ -91,9 +103,20 @@ fun SharedRealityScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        OutlinedButton(
+            enabled = emergencyNumber.isNotBlank(),
+            onClick = { showSuccess = sendSms(context, emergencyNumber, statusMessage(nickname)) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Stattdessen per SMS")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         if (showSuccess) {
             Text(
-                "Meldung wurde vorbereitet / gesendet.",
+                "Nachricht ist vorbereitet – bitte in der geöffneten App auf Senden tippen.",
+                textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium
             )
@@ -120,18 +143,33 @@ fun SharedRealityScreen(
     }
 }
 
-fun sendWhatsApp(context: Context, number: String, message: String) {
-    try {
-        val uri = Uri.parse("https://api.whatsapp.com/send?phone=$number&text=${Uri.encode(message)}")
-        val intent = Intent(Intent.ACTION_VIEW, uri)
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        // Fallback: SMS oder Share
-        val sendIntent = Intent().apply {
-            action = Intent.ACTION_SEND
-            putExtra(Intent.EXTRA_TEXT, message)
-            type = "text/plain"
-        }
-        context.startActivity(Intent.createChooser(sendIntent, "Status senden via..."))
+private fun statusMessage(nickname: String): String {
+    val sender = nickname.ifBlank { null }?.let { "$it hier. " } ?: ""
+    return "${sender}Ich halte die Stellung. Ich bin präsent und sorge für Sicherheit."
+}
+
+/**
+ * Öffnet WhatsApp mit vorausgefülltem Text. Ist WhatsApp nicht installiert, öffnet der
+ * Link die WhatsApp-Webseite im Browser – deshalb gibt es zusätzlich den SMS-Weg.
+ * @return true, wenn eine App geöffnet wurde.
+ */
+private fun sendWhatsApp(context: Context, number: String, message: String): Boolean {
+    val phone = normalizeWhatsAppNumber(number)
+    val uri = Uri.parse("https://wa.me/$phone?text=${Uri.encode(message)}")
+    return startSafely(context, Intent(Intent.ACTION_VIEW, uri))
+}
+
+private fun sendSms(context: Context, number: String, message: String): Boolean {
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", number, null)).apply {
+        putExtra("sms_body", message)
     }
+    return startSafely(context, intent)
+}
+
+private fun startSafely(context: Context, intent: Intent): Boolean = try {
+    context.startActivity(intent)
+    true
+} catch (e: ActivityNotFoundException) {
+    Toast.makeText(context, "Keine passende App gefunden.", Toast.LENGTH_LONG).show()
+    false
 }

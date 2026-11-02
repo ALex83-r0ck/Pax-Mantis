@@ -1,64 +1,56 @@
 package com.alexander.paxmentis.screens
 
-import android.content.Intent
-import android.net.Uri
-import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.alexander.paxmentis.domain.PANIC_STEPS
+import com.alexander.paxmentis.domain.isPanicDone
+import com.alexander.paxmentis.domain.nextPanicStep
+import com.alexander.paxmentis.ui.components.EmergencyHelp
+import com.alexander.paxmentis.ui.tts.rememberTts
 import com.alexander.paxmentis.ui.viewmodels.PanicViewModel
 import kotlinx.coroutines.delay
-import java.util.Locale
+
+private const val STEP_DURATION_MS = 10_000L
 
 @Composable
 fun PanicScreen(
-    hasCallPermission: Boolean,
-    viewModel: PanicViewModel = hiltViewModel()
+    viewModel: PanicViewModel = hiltViewModel(),
+    onOpenCrisisPlan: (() -> Unit)? = null
 ) {
-    var step by remember { mutableIntStateOf(0) }
-    var useTTS by remember { mutableStateOf(true) }
-    val context = LocalContext.current
+    // step == PANIC_STEPS.size bedeutet: Übung durchlaufen.
+    var step by rememberSaveable { mutableIntStateOf(0) }
+    var useTTS by rememberSaveable { mutableStateOf(true) }
+    val tts = rememberTts()
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
-    
-    val tts = remember { mutableStateOf<TextToSpeech?>(null) }
-    val steps = listOf(
-        "Atme tief ein und zähle bis 4",
-        "Halte den Atem für 4 Sekunden",
-        "Atme langsam aus und zähle bis 8",
-        "Fokussiere dich auf einen Punkt in deiner Umgebung",
-        "Wiederhole die Atmung, bis du ruhiger bist"
-    )
+    val isDone = isPanicDone(step)
 
-    DisposableEffect(Unit) {
-        tts.value = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts.value?.language = Locale.GERMAN
-            }
-        }
-        onDispose {
-            tts.value?.stop()
-            tts.value?.shutdown()
+    LaunchedEffect(step, useTTS) {
+        if (!useTTS) {
+            tts.stop()
+        } else if (!isDone) {
+            tts.speak(PANIC_STEPS[step])
         }
     }
 
+    // Automatisch weiter – inklusive Übergang in den "Fertig"-Zustand.
     LaunchedEffect(step) {
-        if (step < steps.size && useTTS) {
-            tts.value?.speak(steps[step], TextToSpeech.QUEUE_FLUSH, null, null)
-        }
-        if (step < steps.size - 1) {
-            delay(10000)
-            step += 1
+        if (!isPanicDone(step)) {
+            delay(STEP_DURATION_MS)
+            step = nextPanicStep(step)
         }
     }
 
@@ -78,7 +70,9 @@ fun PanicScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
         ) {
             Text(
                 text = "Notfallhilfe",
@@ -86,80 +80,72 @@ fun PanicScreen(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.error
             )
-            
+
             Spacer(modifier = Modifier.height(32.dp))
 
-            if (step < steps.size) {
+            if (!isDone) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Text(
-                        text = steps[step],
+                        text = PANIC_STEPS[step],
                         fontSize = 22.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(24.dp),
                         lineHeight = 30.sp
                     )
                 }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                LinearProgressIndicator(
-                    progress = { (step + 1).toFloat() / steps.size },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Button(onClick = { step = (step + 1).coerceAtMost(steps.size - 1) }) {
-                    Text("Nächster Schritt")
+                LinearProgressIndicator(
+                    progress = { (step + 1).toFloat() / PANIC_STEPS.size },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(onClick = { step = nextPanicStep(step) }) {
+                    Text(if (step == PANIC_STEPS.size - 1) "Fertig" else "Nächster Schritt")
                 }
             } else {
                 Text(
-                    text = "Gefühl der Panik noch da? \nHilfe ist nur einen Klick entfernt.",
+                    text = "Gefühl der Panik noch da?\nDu musst da nicht allein durch.",
                     fontSize = 18.sp,
                     textAlign = TextAlign.Center
                 )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_DIAL).apply {
-                            data = Uri.parse("tel:$emergencyNumber")
-                        }
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("$emergencyContact anrufen", fontSize = 18.sp)
-                }
-                
                 Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_DIAL).apply {
-                            data = Uri.parse("tel:116117")
-                        }
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Ärztlicher Bereitschaftsdienst", fontSize = 18.sp)
+                OutlinedButton(onClick = { step = 0 }) {
+                    Text("Übung wiederholen")
                 }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Hilfe ist IMMER sichtbar – nicht erst nach Ende der Übung.
+            EmergencyHelp(
+                contactName = emergencyContact,
+                contactNumber = emergencyNumber
+            )
+
+            if (onOpenCrisisPlan != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(onClick = onOpenCrisisPlan, modifier = Modifier.fillMaxWidth()) {
+                    Text("Meinen Krisenplan öffnen")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = useTTS, onCheckedChange = { useTTS = it })
                 Text("Sprachführung")
-                Spacer(modifier = Modifier.width(16.dp))
-                TextButton(onClick = { step = 0 }) {
-                    Text("Neustart")
+                if (!isDone) {
+                    Spacer(modifier = Modifier.width(16.dp))
+                    TextButton(onClick = { step = 0 }) {
+                        Text("Neustart")
+                    }
                 }
             }
         }

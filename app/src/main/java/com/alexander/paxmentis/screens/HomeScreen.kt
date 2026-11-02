@@ -1,5 +1,6 @@
 package com.alexander.paxmentis.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,21 +19,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.alexander.paxmentis.ui.components.TELEFONSEELSORGE_CHAT_URL
+import com.alexander.paxmentis.ui.components.TELEFONSEELSORGE_NUMBER
+import com.alexander.paxmentis.ui.components.dial
+import com.alexander.paxmentis.ui.components.openUrl
 import com.alexander.paxmentis.ui.viewmodels.HomeViewModel
 
+/**
+ * Startseite: Wer in der Krise ankommt, soll ohne Scrollen und mit einem Tipp Hilfe erreichen.
+ * Deshalb steht direkte Hilfe ganz oben, Werkzeuge darunter. Rot ist allein dem Notruf 112 vorbehalten.
+ */
 @Composable
 fun HomeScreen(
     navController: NavController,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val nickname by viewModel.nickname.collectAsState()
+    val contactName by viewModel.emergencyContact.collectAsState()
+    val contactNumber by viewModel.emergencyNumber.collectAsState()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -46,84 +58,125 @@ fun HomeScreen(
                     )
                 )
             )
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(16.dp)
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        
         Text(
-            text = "Hallo $nickname ♥️",
-            fontSize = 32.sp,
+            text = if (nickname.isBlank()) "Hallo ♥️" else "Hallo $nickname ♥️",
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center
+            color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = "Deine Werkzeuge für Stabilität.",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.secondary,
-            fontStyle = FontStyle.Italic
+            text = "Schön, dass du da bist.",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.secondary
         )
-        
-        Spacer(modifier = Modifier.height(32.dp))
 
-        // Krisen-Kompass (Highlight)
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Direkte Hilfe
         Card(
             onClick = { navController.navigate("crisis_compass") },
-            modifier = Modifier.fillMaxWidth().height(120.dp),
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error),
-            elevation = CardDefaults.cardElevation(8.dp)
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            elevation = CardDefaults.cardElevation(6.dp)
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Explore, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.White)
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text("KRISEN-KOMPASS", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                        Text("Soforthilfe bei Panik & Angst", fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
-                    }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Explore, contentDescription = null, modifier = Modifier.size(44.dp))
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text("Mir geht es gerade nicht gut", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Der Krisen-Kompass zeigt dir, was jetzt hilft", fontSize = 14.sp)
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Hauptmodule Grid
-        Text("Alle Module", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Start))
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Row 1: Kommunikation & Präsenz
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            QuickActionButton(
-                label = "Neutral-Msg",
-                description = "Sachlich bleiben",
-                icon = Icons.AutoMirrored.Filled.Chat,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                onClick = { navController.navigate("neutral_messaging") }
-            )
-            QuickActionButton(
-                label = "Shared Reality",
-                description = "Präsenz zeigen",
-                icon = Icons.Default.Security,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.primaryContainer,
-                onClick = { navController.navigate("shared_reality") }
-            )
-        }
-        
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Row 2: Entspannung & Fokus
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (contactNumber.isNotBlank()) {
+                HelpButton(
+                    label = "${contactName.ifBlank { "Vertrauensperson" }} anrufen",
+                    icon = Icons.Default.Call,
+                    modifier = Modifier.weight(1f),
+                    onClick = { dial(context, contactNumber) }
+                )
+            } else {
+                HelpButton(
+                    label = "Vertrauensperson eintragen",
+                    icon = Icons.Default.PersonAdd,
+                    modifier = Modifier.weight(1f),
+                    onClick = { navController.navigate("settings") }
+                )
+            }
+            HelpButton(
+                label = "Mein Krisenplan",
+                icon = Icons.Default.Checklist,
+                modifier = Modifier.weight(1f),
+                onClick = { navController.navigate("crisis_plan") }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            HelpButton(
+                label = "Telefonseelsorge\n0800 111 0 111",
+                icon = Icons.Default.SupportAgent,
+                modifier = Modifier.weight(1f),
+                onClick = { dial(context, TELEFONSEELSORGE_NUMBER) }
+            )
+            HelpButton(
+                label = "Lieber schreiben\n(Chat)",
+                icon = Icons.AutoMirrored.Filled.Chat,
+                modifier = Modifier.weight(1f),
+                onClick = { openUrl(context, TELEFONSEELSORGE_CHAT_URL) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = { dial(context, "112") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+        ) {
+            Text("Lebensgefahr? Notruf 112", fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        SectionTitle("Zur Ruhe kommen")
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickActionButton(
                 label = "Atem-Übung",
                 description = "Nervensystem beruhigen",
                 icon = Icons.Default.Air,
                 modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.secondaryContainer,
                 onClick = { navController.navigate("breathing") }
             )
+            QuickActionButton(
+                label = "5-4-3-2-1",
+                description = "Im Hier und Jetzt ankommen",
+                icon = Icons.Default.Spa,
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                onClick = { navController.navigate("grounding_54321") }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        SectionTitle("Weitere Werkzeuge")
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickActionButton(
                 label = "Sorgenstuhl",
                 description = "Gedanken ablegen",
@@ -131,12 +184,6 @@ fun HomeScreen(
                 modifier = Modifier.weight(1f),
                 onClick = { navController.navigate("worry_chair") }
             )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Row 3: Schlaf & System
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickActionButton(
                 label = "Schlafhilfe",
                 description = "Sanft zur Ruhe kommen",
@@ -144,20 +191,37 @@ fun HomeScreen(
                 modifier = Modifier.weight(1f),
                 onClick = { navController.navigate("sleep_aid") }
             )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickActionButton(
-                label = "Einstellungen",
-                description = "Profil & Notfallkontakt",
-                icon = Icons.Default.Settings,
+                label = "Neutral-Msg",
+                description = "Sachlich bleiben",
+                icon = Icons.AutoMirrored.Filled.Chat,
                 modifier = Modifier.weight(1f),
-                onClick = { navController.navigate("settings") }
+                onClick = { navController.navigate("neutral_messaging") }
+            )
+            QuickActionButton(
+                label = "Shared Reality",
+                description = "Präsenz zeigen",
+                icon = Icons.Default.Security,
+                modifier = Modifier.weight(1f),
+                onClick = { navController.navigate("shared_reality") }
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        // Footer Button
         OutlinedButton(
-            onClick = { viewModel.addQuickEntry() },
+            onClick = {
+                viewModel.addQuickEntry { saved ->
+                    val message = if (saved) "Vorfall im Sorgenstuhl vermerkt."
+                    else "Konnte gerade nicht im Sorgenstuhl vermerkt werden."
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -165,8 +229,42 @@ fun HomeScreen(
             Spacer(Modifier.width(8.dp))
             Text("Einen Vorfall melden", fontSize = 16.sp)
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    Spacer(modifier = Modifier.height(12.dp))
+}
+
+/** Großer, gut treffbarer Knopf für direkte Hilfe (mind. 72 dp hoch). */
+@Composable
+private fun HelpButton(
+    label: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 72.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(label, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 17.sp)
+        }
     }
 }
 
@@ -193,7 +291,7 @@ fun QuickActionButton(
             Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(8.dp))
             Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
-            Text(description, fontSize = 10.sp, textAlign = TextAlign.Center, lineHeight = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+            Text(description, fontSize = 12.sp, textAlign = TextAlign.Center, lineHeight = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
         }
     }
 }

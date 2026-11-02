@@ -1,12 +1,9 @@
 package com.alexander.paxmentis
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -16,78 +13,115 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.navigation.compose.*
 import com.alexander.paxmentis.screens.*
 import com.alexander.paxmentis.security.BiometricPromptManager
+import com.alexander.paxmentis.security.LockedContent
+import com.alexander.paxmentis.security.SessionLock
 import com.alexander.paxmentis.ui.theme.PaxMentisTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-    private var hasCallPermission by mutableStateOf(false)
-    private var isUnlocked by mutableStateOf(false)
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        hasCallPermission = isGranted
-    }
+    @Inject
+    lateinit var sessionLock: SessionLock
+
+    private lateinit var biometricPromptManager: BiometricPromptManager
+    private var authMessage by mutableStateOf<String?>(null)
+    private var pendingRoute by mutableStateOf<String?>(null)
+
+    // Der PIN-/Muster-Dialog kann die Activity kurz stoppen; dann nicht mitten im Entsperren sperren.
+    private var authInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        System.loadLibrary("sqlcipher")
-        checkPermissions()
-        
+
+        biometricPromptManager = BiometricPromptManager(this) { result ->
+            authInProgress = false
+            when (result) {
+                BiometricPromptManager.AuthResult.Success -> {
+                    authMessage = null
+                    sessionLock.unlock()
+                }
+                is BiometricPromptManager.AuthResult.Error -> authMessage = result.message
+                is BiometricPromptManager.AuthResult.Unavailable -> authMessage = result.message
+            }
+        }
+
+        // Nach einer Drehung / Wiederherstellung nicht erneut zum Widget-Ziel springen.
+        if (savedInstanceState == null) {
+            pendingRoute = routeFromIntent(intent)
+        }
+
         setContent {
             PaxMentisTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    if (isUnlocked) {
-                        AppNavigation(hasCallPermission)
-                    } else {
-                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primaryContainer))
-                        
-                        LaunchedEffect(Unit) {
-                            delay(1500)
-                            if (!isUnlocked) {
-                                isUnlocked = true
-                            }
-                        }
-                    }
+                    val isUnlocked by sessionLock.isUnlocked.collectAsState()
+                    AppNavigation(
+                        isUnlocked = isUnlocked,
+                        authMessage = authMessage,
+                        onRequestUnlock = ::requestUnlock,
+                        pendingRoute = pendingRoute,
+                        onPendingRouteHandled = { pendingRoute = null }
+                    )
                 }
             }
         }
-
-        authenticate()
     }
 
-    private fun authenticate() {
-        val biometricManager = BiometricPromptManager(this)
-        biometricManager.showBiometricPrompt(
-            title = "Pax Mentis Entsperren",
-            description = "Bitte authentifiziere Dich.",
-            onSuccess = { isUnlocked = true },
-            onError = { /* Fallback */ }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        routeFromIntent(intent)?.let { pendingRoute = it }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // App im Hintergrund -> geschützte Bereiche wieder sperren (nicht bei Drehung).
+        if (!isChangingConfigurations && !authInProgress) {
+            sessionLock.lock()
+        }
+    }
+
+    private fun requestUnlock() {
+        if (authInProgress) return
+        authMessage = null
+        authInProgress = true
+        biometricPromptManager.authenticate(
+            title = "Pax Mentis entsperren",
+            description = "Bitte bestätige, dass du es bist."
         )
     }
 
-    private fun checkPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-            hasCallPermission = true
-        } else {
-            requestPermissionLauncher.launch(Manifest.permission.CALL_PHONE)
-        }
+    private fun routeFromIntent(intent: Intent?): String? {
+        if (intent == null) return null
+        if ((intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return null
+        // Die Activity ist exportiert: nur bekannte, ungeschützte Ziele zulassen.
+        return intent.getStringExtra(EXTRA_NAVIGATE_TO)?.takeIf { it in EXTERNAL_ROUTES }
+    }
+
+    companion object {
+        const val EXTRA_NAVIGATE_TO = "navigate_to"
+        const val ROUTE_PANIC = "panic"
+        private val EXTERNAL_ROUTES = setOf(ROUTE_PANIC)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(hasCallPermission: Boolean) {
+fun AppNavigation(
+    isUnlocked: Boolean,
+    authMessage: String?,
+    onRequestUnlock: () -> Unit,
+    pendingRoute: String?,
+    onPendingRouteHandled: () -> Unit
+) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -119,6 +153,18 @@ fun AppNavigation(hasCallPermission: Boolean) {
                     isSelected = currentRoute == "crisis_compass",
                     onClick = {
                         navController.navigate("crisis_compass") {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                        scope.launch { drawerState.close() }
+                    }
+                )
+                NavigationItem(
+                    icon = Icons.Default.Favorite,
+                    label = "Mein Krisenplan",
+                    isSelected = currentRoute == "crisis_plan",
+                    onClick = {
+                        navController.navigate("crisis_plan") {
                             popUpTo(navController.graph.startDestinationId)
                             launchSingleTop = true
                         }
@@ -231,17 +277,40 @@ fun AppNavigation(hasCallPermission: Boolean) {
                 composable("crisis_compass") { CrisisCompassScreen(navController) }
                 composable("neutral_messaging") { NeutralMessagingScreen() }
                 composable("shared_reality") { SharedRealityScreen() }
-                composable("panic") { PanicScreen(hasCallPermission) }
+                composable(MainActivity.ROUTE_PANIC) {
+                    PanicScreen(onOpenCrisisPlan = { navController.navigate("crisis_plan") })
+                }
+                // Bewusst ohne Sperre – siehe CrisisPlanScreen.
+                composable("crisis_plan") { CrisisPlanScreen() }
                 composable("grounding_54321") { GroundingScreen() }
                 composable("depression_help") { DepressionHelpScreen() }
                 composable("safe_space") { SafeSpaceScreen() }
                 composable("breathing") { BreathingScreen() }
-                composable("worry_chair") { WorryChairScreen() }
+                composable("worry_chair") {
+                    LockedContent(isUnlocked, authMessage, onRequestUnlock) { WorryChairScreen() }
+                }
                 composable("sleep_aid") { SleepAidScreen() }
-                composable("settings") { SettingsScreen() }
+                composable("settings") {
+                    LockedContent(isUnlocked, authMessage, onRequestUnlock) { SettingsScreen() }
+                }
                 composable("ambivalence") { AmbivalenceScreen() }
-                composable("trigger_block") { TriggerBlockScreen(onNavigateBack = { navController.popBackStack() }) }
+                composable("trigger_block") {
+                    TriggerBlockScreen(
+                        onStartBreathing = {
+                            navController.navigate("breathing") {
+                                popUpTo("trigger_block") { inclusive = true }
+                            }
+                        },
+                        onDismiss = { navController.popBackStack() }
+                    )
+                }
                 composable("night_watch") { NightWatchScreen() }
+            }
+
+            LaunchedEffect(pendingRoute) {
+                val route = pendingRoute ?: return@LaunchedEffect
+                navController.navigate(route) { launchSingleTop = true }
+                onPendingRouteHandled()
             }
         }
     }

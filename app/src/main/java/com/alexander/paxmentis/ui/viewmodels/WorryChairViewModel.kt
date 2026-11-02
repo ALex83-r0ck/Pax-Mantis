@@ -21,9 +21,18 @@ class WorryChairViewModel @Inject constructor(
     val entries: StateFlow<List<WorryEntry>> = repository.getAllEntries()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** true, wenn die Datenbank gerade nicht erreichbar ist – die Einträge sind dann nicht verloren. */
+    val unavailable: StateFlow<Boolean> = repository.unavailable
+
     val nickname: StateFlow<String> = userPreferences.nicknameFlow
 
-    fun addEntry(worry: String, reason: String?, worstCase: String?, solution: String?) {
+    fun addEntry(
+        worry: String,
+        reason: String?,
+        worstCase: String?,
+        solution: String?,
+        onResult: (saved: Boolean) -> Unit = {}
+    ) {
         viewModelScope.launch {
             val entry = WorryEntry(
                 date = System.currentTimeMillis(),
@@ -32,7 +41,7 @@ class WorryChairViewModel @Inject constructor(
                 worstCase = worstCase,
                 solution = solution
             )
-            repository.insertEntry(entry)
+            onResult(repository.insertEntry(entry))
         }
     }
 

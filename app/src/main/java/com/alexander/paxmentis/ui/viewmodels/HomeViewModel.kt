@@ -6,9 +6,7 @@ import com.alexander.paxmentis.data.UserPreferences
 import com.alexander.paxmentis.data.WorryEntry
 import com.alexander.paxmentis.data.repository.WorryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,19 +16,18 @@ class HomeViewModel @Inject constructor(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
-    val worryEntries: StateFlow<List<WorryEntry>> = repository.getAllEntries()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     val nickname: StateFlow<String> = userPreferences.nicknameFlow
+    val emergencyContact: StateFlow<String> = userPreferences.emergencyContactFlow
+    val emergencyNumber: StateFlow<String> = userPreferences.emergencyNumberFlow
 
-    fun addQuickEntry() {
+    fun addQuickEntry(onResult: (saved: Boolean) -> Unit) {
         viewModelScope.launch {
             val entry = WorryEntry(
                 date = System.currentTimeMillis(),
                 worry = "Schnelle Erfassung: Panik/Angst",
                 reason = "Vom Dashboard aus gemeldet"
             )
-            repository.insertEntry(entry)
+            onResult(repository.insertEntry(entry))
         }
     }
 }

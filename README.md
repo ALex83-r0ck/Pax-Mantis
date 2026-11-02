@@ -22,15 +22,19 @@ Ein intelligentes Modul, das auf Knopfdruck spezialisierte Hilfe bietet:
 *   **Schlafhilfe:** Einschlaf-Meditation mit sanften Affirmationen und atmosphärischem Sternenhimmel.
 
 ## 🛡️ Sicherheit & Datenschutz
-*   **Biometrischer Schutz:** Zugriff auf die App nur via Fingerabdruck oder Gesichtserkennung.
-*   **SQLCipher-Verschlüsselung:** Alle persönlichen Einträge (z.B. im Sorgenstuhl) werden lokal verschlüsselt in einer Datenbank gespeichert.
+*   **Biometrischer Schutz – gezielt statt überall:** Persönliche Bereiche (Sorgenstuhl, Einstellungen) sind per Fingerabdruck, Gesichtserkennung oder Geräte-PIN geschützt und sperren sich wieder, sobald die App in den Hintergrund geht. Alle Notfall-Funktionen (Panikhilfe, Atmung, Erdung, Nachtwache, Notruf) sind bewusst **ohne** Entsperren erreichbar – in einer Krise darf kein Fingerabdruck-Dialog im Weg stehen.
+*   **SQLCipher-Verschlüsselung:** Alle persönlichen Einträge (z.B. im Sorgenstuhl) werden lokal verschlüsselt gespeichert. Der Datenbankschlüssel wird pro Gerät zufällig erzeugt und über den Android Keystore geschützt.
 *   **Offline-First:** Alle kritischen Beruhigungsfunktionen funktionieren ohne Internetverbindung, um absolute Zuverlässigkeit zu garantieren.
 
 ## ⚙️ Technische Highlights
 *   **Framework:** Jetpack Compose (Modernes UI-Toolkit)
 *   **Sprachausgabe (TTS):** Optimierte, sanfte Frequenzen zur Beruhigung des Nervensystems.
 *   **Haptisches Feedback:** Nutzung der Vibrations-API für geführte Übungen mit geschlossenen Augen.
-*   **Architektur:** MVVM mit Clean Architecture Ansätzen und Hilt (Dependency Injection).
+*   **Architektur:** MVVM mit Hilt (Dependency Injection), Repository für die Datenbank, gemeinsamer TTS-Helfer und reine, unit-getestete Logik im `domain`-Paket.
+
+## 🧪 Tests
+*   **Unit-Tests (JVM):** `./gradlew testDebugUnitTest` – Logik für Panikhilfe, Nachtwache, WhatsApp-Nummern und Neutral-Messaging.
+*   **Instrumented Tests (Gerät/Emulator):** `./gradlew connectedDebugAndroidTest` – Datenbankschicht (Room-DAO).
 
 ## 🚀 Installation & Erste Schritte
 1.  **Biometrie einrichten:** Stelle sicher, dass dein Handy Fingerabdruck oder Gesichtserkennung aktiviert hat.

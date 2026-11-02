@@ -4,7 +4,6 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.speech.tts.TextToSpeech
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -24,8 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.alexander.paxmentis.ui.tts.rememberTts
 import kotlinx.coroutines.delay
-import java.util.Locale
 
 @Composable
 fun BreathingScreen() {
@@ -34,33 +33,35 @@ fun BreathingScreen() {
     var inhaleTime by remember { mutableFloatStateOf(4f) }
     var holdTime by remember { mutableFloatStateOf(4f) }
     var exhaleTime by remember { mutableFloatStateOf(4f) }
+    // Box-Breathing: 4-4-4-4, also auch nach dem Ausatmen halten (fehlte bisher).
+    var holdAfterExhaleTime by remember { mutableFloatStateOf(4f) }
     var useTTS by remember { mutableStateOf(true) }
     var useHaptics by remember { mutableStateOf(true) }
     var showSettings by remember { mutableStateOf(false) }
     val scale = remember { Animatable(1f) }
     val context = LocalContext.current
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    val tts = rememberTts()
 
-    val vibrator = remember {
+    val vibrator: Vibrator? = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(VibratorManager::class.java)
-            vibratorManager.defaultVibrator
+            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
         } else {
-            @Suppress("DEPRECATION")
             context.getSystemService(Vibrator::class.java)
         }
     }
 
-    DisposableEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.GERMAN
-            }
+    fun pulse() {
+        if (!useHaptics || vibrator == null || !vibrator.hasVibrator()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(100)
         }
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
-        }
+    }
+
+    fun announce(text: String) {
+        if (useTTS) tts.speak(text)
     }
 
     LaunchedEffect(isAnimating) {
@@ -68,44 +69,40 @@ fun BreathingScreen() {
             while (isAnimating) {
                 // Einatmen
                 currentPhase = "Einatmen"
-                if (useTTS) tts?.speak("Einatmen", TextToSpeech.QUEUE_FLUSH, null, null)
-                if (useHaptics) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        vibrator.vibrate(100)
-                    }
-                }
-                
+                announce("Einatmen")
+                pulse()
+
                 scale.animateTo(
                     targetValue = 1.5f,
                     animationSpec = tween((inhaleTime * 1000).toInt(), easing = LinearEasing)
                 )
 
                 // Halten
-                currentPhase = "Halten"
-                if (useTTS) tts?.speak("Halten", TextToSpeech.QUEUE_FLUSH, null, null)
-                delay((holdTime * 1000).toLong())
+                if (holdTime >= 1f) {
+                    currentPhase = "Halten"
+                    announce("Halten")
+                    delay((holdTime * 1000).toLong())
+                }
 
                 // Ausatmen
                 currentPhase = "Ausatmen"
-                if (useTTS) tts?.speak("Ausatmen", TextToSpeech.QUEUE_FLUSH, null, null)
-                if (useHaptics) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-                    } else {
-                        @Suppress("DEPRECATION")
-                        vibrator.vibrate(100)
-                    }
-                }
-                
+                announce("Ausatmen")
+                pulse()
+
                 scale.animateTo(
                     targetValue = 1f,
                     animationSpec = tween((exhaleTime * 1000).toInt(), easing = LinearEasing)
                 )
+
+                // Halten (leer)
+                if (holdAfterExhaleTime >= 1f) {
+                    currentPhase = "Halten"
+                    announce("Halten")
+                    delay((holdAfterExhaleTime * 1000).toLong())
+                }
             }
         } else {
+            tts.stop()
             scale.snapTo(1f)
             currentPhase = "Bereit?"
         }
@@ -183,6 +180,9 @@ fun BreathingScreen() {
                         
                         Text("Ausatmen: ${exhaleTime.toInt()}s")
                         Slider(value = exhaleTime, onValueChange = { exhaleTime = it }, valueRange = 2f..10f)
+
+                        Text("Halten nach dem Ausatmen: ${holdAfterExhaleTime.toInt()}s")
+                        Slider(value = holdAfterExhaleTime, onValueChange = { holdAfterExhaleTime = it }, valueRange = 0f..10f)
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = useTTS, onCheckedChange = { useTTS = it })

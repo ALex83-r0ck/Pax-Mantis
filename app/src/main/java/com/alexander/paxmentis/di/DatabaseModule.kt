@@ -1,8 +1,10 @@
 package com.alexander.paxmentis.di
 
 import android.content.Context
+import com.alexander.paxmentis.data.CrisisPlanDao
 import com.alexander.paxmentis.data.PaxMentisDatabase
 import com.alexander.paxmentis.data.WorryEntryDao
+import com.alexander.paxmentis.security.DatabaseKeyProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,12 +18,20 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): PaxMentisDatabase {
-        return PaxMentisDatabase.getInstance(context)
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+        keyProvider: DatabaseKeyProvider
+    ): PaxMentisDatabase {
+        return PaxMentisDatabase.getInstance(context, keyProvider)
     }
 
     @Provides
     fun provideWorryEntryDao(database: PaxMentisDatabase): WorryEntryDao {
         return database.worryEntryDao()
+    }
+
+    @Provides
+    fun provideCrisisPlanDao(database: PaxMentisDatabase): CrisisPlanDao {
+        return database.crisisPlanDao()
     }
 }

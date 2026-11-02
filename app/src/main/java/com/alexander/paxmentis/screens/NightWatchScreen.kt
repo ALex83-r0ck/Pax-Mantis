@@ -1,6 +1,5 @@
 package com.alexander.paxmentis.screens
 
-import android.speech.tts.TextToSpeech
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -12,18 +11,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.util.*
+import com.alexander.paxmentis.domain.formatTimeUntilMorning
+import com.alexander.paxmentis.ui.tts.rememberTts
+import kotlinx.coroutines.delay
+import java.util.Calendar
 
 @Composable
 fun NightWatchScreen() {
-    val context = LocalContext.current
-    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+    val tts = rememberTts(speechRate = 0.5f, pitch = 0.7f) // sehr langsam, tief
     
     val pulse = rememberInfiniteTransition()
     val glow by pulse.animateFloat(
@@ -35,17 +35,12 @@ fun NightWatchScreen() {
         )
     )
 
-    DisposableEffect(Unit) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.GERMAN
-                tts?.setSpeechRate(0.5f) // Extrem langsam
-                tts?.setPitch(0.7f) // Sehr tief/beruhigend
-            }
-        }
-        onDispose {
-            tts?.stop()
-            tts?.shutdown()
+    // Jede Minute aktualisieren, statt einmal beim Öffnen zu rechnen.
+    var now by remember { mutableStateOf(Calendar.getInstance()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000)
+            now = Calendar.getInstance()
         }
     }
 
@@ -94,7 +89,7 @@ fun NightWatchScreen() {
 
             Button(
                 onClick = { 
-                    tts?.speak("Du musst jetzt nichts lösen. Alles darf warten bis die Sonne aufgeht. Ich bin hier bei dir.", TextToSpeech.QUEUE_FLUSH, null, null)
+                    tts.speak("Du musst jetzt nichts lösen. Alles darf warten, bis die Sonne aufgeht. Ich bin hier bei dir.")
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B263B))
             ) {
@@ -102,7 +97,7 @@ fun NightWatchScreen() {
             }
 
             Text(
-                "In ${timeUntilMorning()} geht die Sonne auf.",
+                "In ${formatTimeUntilMorning(now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE))} ist es Morgen.",
                 fontSize = 14.sp,
                 color = Color(0xFF778DA9)
             )
@@ -110,16 +105,3 @@ fun NightWatchScreen() {
     }
 }
 
-fun timeUntilMorning(): String {
-    val calendar = Calendar.getInstance()
-    val nowHour = calendar.get(Calendar.HOUR_OF_DAY)
-    val morningHour = 6
-    
-    val diff = if (nowHour >= morningHour) {
-        (24 - nowHour) + morningHour
-    } else {
-        morningHour - nowHour
-    }
-    
-    return "$diff Stunden"
-}

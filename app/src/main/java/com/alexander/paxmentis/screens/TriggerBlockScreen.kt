@@ -16,7 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun TriggerBlockScreen(onNavigateBack: () -> Unit) {
+fun TriggerBlockScreen(
+    onStartBreathing: () -> Unit,
+    onDismiss: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -71,14 +74,15 @@ fun TriggerBlockScreen(onNavigateBack: () -> Unit) {
             )
 
             Button(
-                onClick = onNavigateBack,
+                onClick = onStartBreathing,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Okay, ich mache eine Atemübung")
             }
             
-            TextButton(onClick = { /* User insistiert */ }) {
+            // Autonomie respektieren: kein Bevormunden, einfach zurück.
+            TextButton(onClick = onDismiss) {
                 Text("Ich weiß was ich tue (Trotzdem weiter)", color = Color.White.copy(alpha = 0.4f))
             }
         }
