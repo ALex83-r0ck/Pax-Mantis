@@ -4,10 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import java.security.KeyStore
 import java.security.SecureRandom
 import javax.crypto.AEADBadTagException
@@ -94,29 +91,9 @@ class DatabaseKeyProvider internal constructor(
      */
     fun legacyPassphrases(): List<ByteArray> = listOf(LEGACY_FIXED_PASSPHRASE.copyOf()) + interimPassphrases()
 
-    @Suppress("DEPRECATION")
     private fun interimPassphrases(): List<ByteArray> {
-        // Nur lesen, wenn es den Zwischenstand gab: EncryptedSharedPreferences.create legt sonst
-        // Datei und Master-Key neu an.
-        val file = File(context.applicationInfo.dataDir, "shared_prefs/$interimPrefsName.xml")
-        if (!file.exists()) return emptyList()
-
-        val encrypted = try {
-            EncryptedSharedPreferences.create(
-                context,
-                interimPrefsName,
-                MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            ).getString(INTERIM_KEY_PASSPHRASE, null)
-        } catch (e: Exception) {
-            // Tink wirft je nach Fehler GeneralSecurityException, IOException oder RuntimeExceptions.
-            null
-        }
-        val plain = context.getSharedPreferences(interimPrefsName, Context.MODE_PRIVATE)
-            .getString(INTERIM_KEY_PASSPHRASE, null)
-
-        return listOfNotNull(encrypted, plain).distinct().mapNotNull { base64 ->
+        val values = InterimPrefs.readStrings(context, interimPrefsName, listOf(INTERIM_KEY_PASSPHRASE))
+        return values.byKey[INTERIM_KEY_PASSPHRASE].orEmpty().mapNotNull { base64 ->
             try {
                 Base64.decode(base64, Base64.NO_WRAP)
             } catch (e: IllegalArgumentException) {

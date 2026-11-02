@@ -31,6 +31,7 @@ fun AmbivalenceScreen(
     var pros by rememberSaveable { mutableStateOf("") }
     var cons by rememberSaveable { mutableStateOf("") }
     var saved by rememberSaveable { mutableStateOf(false) }
+    var saveFailed by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -143,8 +144,10 @@ fun AmbivalenceScreen(
             
             Button(
                 onClick = {
-                    viewModel.saveDecisionCheck(decision, pros, cons)
-                    saved = true
+                    viewModel.saveDecisionCheck(decision, pros, cons) { ok ->
+                        saved = ok
+                        saveFailed = !ok
+                    }
                 },
                 enabled = !saved && (decision.isNotBlank() || pros.isNotBlank() || cons.isNotBlank()),
                 modifier = Modifier.fillMaxWidth()
@@ -158,6 +161,13 @@ fun AmbivalenceScreen(
                         "Du findest es im Sorgenstuhl.",
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.primary
+                )
+            } else if (saveFailed) {
+                Text(
+                    "Konnte gerade nicht gespeichert werden. Deine Eingaben bleiben stehen – " +
+                        "versuche es gleich noch einmal.",
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.error
                 )
             }
         }

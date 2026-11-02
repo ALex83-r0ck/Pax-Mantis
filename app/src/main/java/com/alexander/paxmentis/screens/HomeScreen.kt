@@ -161,8 +161,11 @@ fun HomeScreen(
         // Footer Button
         OutlinedButton(
             onClick = {
-                viewModel.addQuickEntry()
-                Toast.makeText(context, "Vorfall im Sorgenstuhl vermerkt.", Toast.LENGTH_SHORT).show()
+                viewModel.addQuickEntry { saved ->
+                    val message = if (saved) "Vorfall im Sorgenstuhl vermerkt."
+                    else "Konnte gerade nicht im Sorgenstuhl vermerkt werden."
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)

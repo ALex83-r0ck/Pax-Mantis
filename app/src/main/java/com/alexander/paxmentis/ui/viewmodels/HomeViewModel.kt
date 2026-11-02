@@ -18,14 +18,14 @@ class HomeViewModel @Inject constructor(
 
     val nickname: StateFlow<String> = userPreferences.nicknameFlow
 
-    fun addQuickEntry() {
+    fun addQuickEntry(onResult: (saved: Boolean) -> Unit) {
         viewModelScope.launch {
             val entry = WorryEntry(
                 date = System.currentTimeMillis(),
                 worry = "Schnelle Erfassung: Panik/Angst",
                 reason = "Vom Dashboard aus gemeldet"
             )
-            repository.insertEntry(entry)
+            onResult(repository.insertEntry(entry))
         }
     }
 }

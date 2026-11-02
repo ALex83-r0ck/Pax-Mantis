@@ -21,12 +21,12 @@ class AmbivalenceViewModel @Inject constructor(
     private val repository: WorryRepository
 ) : ViewModel() {
 
-    fun saveDecisionCheck(decision: String, pros: String, cons: String) {
+    fun saveDecisionCheck(decision: String, pros: String, cons: String, onResult: (saved: Boolean) -> Unit) {
         val now = System.currentTimeMillis()
         val earliest = SimpleDateFormat("EEEE, dd.MM. 'um' HH:mm 'Uhr'", Locale.GERMAN)
             .format(Date(now + 24 * 60 * 60 * 1000L))
         viewModelScope.launch {
-            repository.insertEntry(
+            val saved = repository.insertEntry(
                 WorryEntry(
                     date = now,
                     worry = "Entscheidung: ${decision.ifBlank { "(ohne Titel)" }}",
@@ -35,6 +35,7 @@ class AmbivalenceViewModel @Inject constructor(
                     solution = "Frühestens entscheiden am $earliest."
                 )
             )
+            onResult(saved)
         }
     }
 }

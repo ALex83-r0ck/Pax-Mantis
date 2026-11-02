@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +40,8 @@ fun WorryChairScreen(
     
     val entries by viewModel.entries.collectAsState()
     val nickname by viewModel.nickname.collectAsState()
+    val unavailable by viewModel.unavailable.collectAsState()
+    val context = LocalContext.current
 
     var editEntry by remember { mutableStateOf<WorryEntry?>(null) }
     var deleteCandidate by remember { mutableStateOf<WorryEntry?>(null) }
@@ -86,6 +90,20 @@ fun WorryChairScreen(
                         fontSize = 14.sp,
                         fontStyle = FontStyle.Italic
                     )
+                }
+
+                if (unavailable) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Text(
+                            "Der Sorgenstuhl ist gerade nicht erreichbar. Deine Einträge sind nicht verloren – " +
+                                "sie bleiben sicher auf dem Gerät. Versuche es später noch einmal.",
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
                 }
             }
 
@@ -138,12 +156,22 @@ fun WorryChairScreen(
                                 reason = reason.ifEmpty { null },
                                 worstCase = worstCase.ifEmpty { null },
                                 solution = solution.ifEmpty { null }
-                            )
-                            worry = ""
-                            reason = ""
-                            worstCase = ""
-                            solution = ""
-                            tts.speak("Danke, dass du das geteilt hast. Du hast es hier abgelegt.")
+                            ) { saved ->
+                                // Nur bei Erfolg leeren – sonst bleibt der Text stehen und geht nicht verloren.
+                                if (saved) {
+                                    worry = ""
+                                    reason = ""
+                                    worstCase = ""
+                                    solution = ""
+                                    tts.speak("Danke, dass du das geteilt hast. Du hast es hier abgelegt.")
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Konnte gerade nicht gespeichert werden. Dein Text bleibt stehen.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
