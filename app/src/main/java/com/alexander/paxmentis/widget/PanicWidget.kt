@@ -27,8 +27,11 @@ class PanicWidget : AppWidgetProvider() {
     ) {
         val views = RemoteViews(context.packageName, R.layout.widget_panic)
         val intent = Intent(context, MainActivity::class.java).apply {
-            putExtra("navigate_to", "panic")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(MainActivity.EXTRA_NAVIGATE_TO, MainActivity.ROUTE_PANIC)
+            // Laufende App wiederverwenden (onNewIntent) statt sie neu zu starten.
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             context,

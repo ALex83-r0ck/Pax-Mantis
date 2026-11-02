@@ -34,8 +34,9 @@ class UserPreferences @Inject constructor(
         _nickname.value = nickname
     }
 
+    // Kein Platzhalter-Name mehr: leer = noch nicht eingerichtet.
     fun getEmergencyContact(): String {
-        return sharedPreferences.getString("emergency_contact", "Alexander") ?: "Alexander"
+        return sharedPreferences.getString("emergency_contact", "") ?: ""
     }
 
     fun setEmergencyContact(contact: String) {
@@ -43,12 +44,19 @@ class UserPreferences @Inject constructor(
         _emergencyContact.value = contact
     }
 
+    // Früher war "+49123456789" als Default gesetzt – eine Fantasienummer, die im Notfall
+    // gewählt worden wäre. Leer = noch nicht eingerichtet; der Panik-Screen weist darauf hin.
     fun getEmergencyNumber(): String {
-        return sharedPreferences.getString("emergency_number", "+49123456789") ?: "+49123456789"
+        val stored = sharedPreferences.getString("emergency_number", "") ?: ""
+        return if (stored == LEGACY_PLACEHOLDER_NUMBER) "" else stored
     }
 
     fun setEmergencyNumber(number: String) {
         sharedPreferences.edit().putString("emergency_number", number).apply()
         _emergencyNumber.value = number
+    }
+
+    private companion object {
+        const val LEGACY_PLACEHOLDER_NUMBER = "+49123456789"
     }
 }

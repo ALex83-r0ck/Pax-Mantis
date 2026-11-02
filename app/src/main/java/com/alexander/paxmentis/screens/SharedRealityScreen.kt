@@ -74,7 +74,17 @@ fun SharedRealityScreen(
             color = MaterialTheme.colorScheme.secondary
         )
 
+        if (emergencyNumber.isBlank()) {
+            Text(
+                "Noch keine Vertrauensperson hinterlegt. Trag sie zuerst in den Einstellungen ein.",
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
+
         Button(
+            enabled = emergencyNumber.isNotBlank(),
             onClick = {
                 val message = "Alexander hier. Ich halte die Stellung. Ich bin präsent und sorge für Sicherheit."
                 sendWhatsApp(context, emergencyNumber, message)

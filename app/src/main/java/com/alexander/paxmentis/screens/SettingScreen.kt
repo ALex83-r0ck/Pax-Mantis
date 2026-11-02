@@ -1,5 +1,8 @@
 package com.alexander.paxmentis.screens
 
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -71,6 +74,8 @@ fun SettingsScreen(
                     value = emergencyNumber,
                     onValueChange = { viewModel.setEmergencyNumber(it) },
                     label = { Text("Telefonnummer") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

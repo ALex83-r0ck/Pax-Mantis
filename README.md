@@ -22,8 +22,8 @@ Ein intelligentes Modul, das auf Knopfdruck spezialisierte Hilfe bietet:
 *   **Schlafhilfe:** Einschlaf-Meditation mit sanften Affirmationen und atmosphärischem Sternenhimmel.
 
 ## 🛡️ Sicherheit & Datenschutz
-*   **Biometrischer Schutz:** Zugriff auf die App nur via Fingerabdruck oder Gesichtserkennung.
-*   **SQLCipher-Verschlüsselung:** Alle persönlichen Einträge (z.B. im Sorgenstuhl) werden lokal verschlüsselt in einer Datenbank gespeichert.
+*   **Biometrischer Schutz – gezielt statt überall:** Persönliche Bereiche (Sorgenstuhl, Einstellungen) sind per Fingerabdruck, Gesichtserkennung oder Geräte-PIN geschützt und sperren sich wieder, sobald die App in den Hintergrund geht. Alle Notfall-Funktionen (Panikhilfe, Atmung, Erdung, Nachtwache, Notruf) sind bewusst **ohne** Entsperren erreichbar – in einer Krise darf kein Fingerabdruck-Dialog im Weg stehen.
+*   **SQLCipher-Verschlüsselung:** Alle persönlichen Einträge (z.B. im Sorgenstuhl) werden lokal verschlüsselt gespeichert. Der Datenbankschlüssel wird pro Gerät zufällig erzeugt und über den Android Keystore geschützt.
 *   **Offline-First:** Alle kritischen Beruhigungsfunktionen funktionieren ohne Internetverbindung, um absolute Zuverlässigkeit zu garantieren.
 
 ## ⚙️ Technische Highlights
