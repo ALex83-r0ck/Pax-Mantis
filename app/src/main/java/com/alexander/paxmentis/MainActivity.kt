@@ -292,6 +292,8 @@ fun AppNavigation(
                 // Bewusst ohne Sperre – siehe CrisisPlanScreen.
                 composable("crisis_plan") { CrisisPlanScreen() }
                 composable("grounding_54321") { GroundingScreen() }
+                composable("follow_dot") { FollowDotScreen() }
+                composable("find_shapes") { FindShapesScreen() }
                 composable("depression_help") { DepressionHelpScreen() }
                 composable("safe_space") { SafeSpaceScreen() }
                 composable("breathing") { BreathingScreen() }

@@ -171,6 +171,27 @@ fun HomeScreen(
             )
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            QuickActionButton(
+                label = "Folge dem Punkt",
+                description = "Mit den Augen zur Ruhe",
+                icon = Icons.Default.Adjust,
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                onClick = { navController.navigate("follow_dot") }
+            )
+            QuickActionButton(
+                label = "Finde die Formen",
+                description = "Gedanken nach außen lenken",
+                icon = Icons.Default.Category,
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                onClick = { navController.navigate("find_shapes") }
+            )
+        }
+
         Spacer(modifier = Modifier.height(28.dp))
 
         SectionTitle("Weitere Werkzeuge")

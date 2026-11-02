@@ -105,6 +105,16 @@ fun CrisisCompassScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         CrisisOptionCard(
+            title = "Gedankenkreisen",
+            description = "Mein Kopf hört nicht auf zu grübeln.",
+            icon = Icons.Default.Category,
+            color = MaterialTheme.colorScheme.tertiaryContainer,
+            onClick = { navController.navigate("find_shapes") }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        CrisisOptionCard(
             title = "Überforderung / Unsicherheit",
             description = "Ich brauche einen Ort, an dem ich sicher bin.",
             icon = Icons.Default.Home,
