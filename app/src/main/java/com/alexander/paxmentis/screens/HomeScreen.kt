@@ -26,11 +26,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.alexander.paxmentis.domain.greetingFor
+import com.alexander.paxmentis.domain.greetingSubtitleFor
 import com.alexander.paxmentis.ui.components.TELEFONSEELSORGE_CHAT_URL
 import com.alexander.paxmentis.ui.components.TELEFONSEELSORGE_NUMBER
 import com.alexander.paxmentis.ui.components.dial
 import com.alexander.paxmentis.ui.components.openUrl
 import com.alexander.paxmentis.ui.viewmodels.HomeViewModel
+import java.util.Calendar
 
 /**
  * Startseite: Wer in der Krise ankommt, soll ohne Scrollen und mit einem Tipp Hilfe erreichen.
@@ -45,31 +48,23 @@ fun HomeScreen(
     val contactName by viewModel.emergencyContact.collectAsState()
     val contactNumber by viewModel.emergencyNumber.collectAsState()
     val context = LocalContext.current
+    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            )
             .padding(16.dp)
     ) {
         Text(
-            text = if (nickname.isBlank()) "Hallo ♥️" else "Hallo $nickname ♥️",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            text = greetingFor(hour, nickname),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground
         )
         Text(
-            text = "Schön, dass du da bist.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.secondary
+            text = greetingSubtitleFor(hour),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -78,12 +73,11 @@ fun HomeScreen(
         Card(
             onClick = { navController.navigate("crisis_compass") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            elevation = CardDefaults.cardElevation(6.dp)
+            shape = MaterialTheme.shapes.large
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 24.dp),
@@ -100,17 +94,19 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (contactNumber.isNotBlank()) {
                 HelpButton(
-                    label = "${contactName.ifBlank { "Vertrauensperson" }} anrufen",
+                    label = contactName.ifBlank { "Vertraute Person" },
+                    detail = "anrufen",
                     icon = Icons.Default.Call,
                     modifier = Modifier.weight(1f),
                     onClick = { dial(context, contactNumber) }
                 )
             } else {
                 HelpButton(
-                    label = "Vertrauensperson eintragen",
+                    label = "Vertraute Person",
+                    detail = "eintragen",
                     icon = Icons.Default.PersonAdd,
                     modifier = Modifier.weight(1f),
                     onClick = { navController.navigate("settings") }
@@ -126,15 +122,17 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             HelpButton(
-                label = "Telefonseelsorge\n0800 111 0 111",
+                label = "Telefonseelsorge",
+                detail = "0800 111 0 111",
                 icon = Icons.Default.SupportAgent,
                 modifier = Modifier.weight(1f),
                 onClick = { dial(context, TELEFONSEELSORGE_NUMBER) }
             )
             HelpButton(
-                label = "Lieber schreiben\n(Chat)",
+                label = "Lieber schreiben",
+                detail = "Chat",
                 icon = Icons.AutoMirrored.Filled.Chat,
                 modifier = Modifier.weight(1f),
                 onClick = { openUrl(context, TELEFONSEELSORGE_CHAT_URL) }
@@ -154,7 +152,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         SectionTitle("Zur Ruhe kommen")
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickActionButton(
                 label = "Atem-Übung",
                 description = "Nervensystem beruhigen",
@@ -176,7 +174,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         SectionTitle("Weitere Werkzeuge")
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickActionButton(
                 label = "Sorgenstuhl",
                 description = "Gedanken ablegen",
@@ -195,7 +193,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             QuickActionButton(
                 label = "Neutral-Msg",
                 description = "Sachlich bleiben",
@@ -236,34 +234,36 @@ fun HomeScreen(
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    Text(text, style = MaterialTheme.typography.titleLarge)
     Spacer(modifier = Modifier.height(12.dp))
 }
 
-/** Großer, gut treffbarer Knopf für direkte Hilfe (mind. 72 dp hoch). */
+/**
+ * Großer, gut treffbarer Knopf für direkte Hilfe. Icon über dem Text, damit lange Wörter
+ * wie „Telefonseelsorge“ in eine Zeile passen statt mitten im Wort umzubrechen.
+ */
 @Composable
 private fun HelpButton(
     label: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    detail: String? = null,
     onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 72.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier.fillMaxHeight(),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp))
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(label, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 17.sp)
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(26.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(label, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 19.sp)
+            detail?.let { Text(it, fontSize = 13.sp, lineHeight = 17.sp) }
         }
     }
 }
@@ -274,24 +274,23 @@ fun QuickActionButton(
     description: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.surfaceVariant,
+    color: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
     onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(110.dp),
-        colors = CardDefaults.cardColors(containerColor = color),
-        elevation = CardDefaults.cardElevation(2.dp)
+        modifier = modifier.fillMaxHeight().heightIn(min = 110.dp),
+        colors = CardDefaults.cardColors(containerColor = color)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(8.dp))
             Text(label, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
-            Text(description, fontSize = 12.sp, textAlign = TextAlign.Center, lineHeight = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+            Text(description, fontSize = 12.sp, textAlign = TextAlign.Center, lineHeight = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

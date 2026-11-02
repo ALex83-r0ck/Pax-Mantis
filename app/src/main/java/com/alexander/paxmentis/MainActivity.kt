@@ -3,6 +3,7 @@ package com.alexander.paxmentis
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -18,7 +19,9 @@ import com.alexander.paxmentis.screens.*
 import com.alexander.paxmentis.security.BiometricPromptManager
 import com.alexander.paxmentis.security.LockedContent
 import com.alexander.paxmentis.security.SessionLock
+import com.alexander.paxmentis.data.UserPreferences
 import com.alexander.paxmentis.ui.theme.PaxMentisTheme
+import com.alexander.paxmentis.ui.theme.ThemeMood
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,6 +32,9 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var sessionLock: SessionLock
 
+    @Inject
+    lateinit var userPreferences: UserPreferences
+
     private lateinit var biometricPromptManager: BiometricPromptManager
     private var authMessage by mutableStateOf<String?>(null)
     private var pendingRoute by mutableStateOf<String?>(null)
@@ -37,6 +43,7 @@ class MainActivity : AppCompatActivity() {
     private var authInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         biometricPromptManager = BiometricPromptManager(this) { result ->
@@ -57,7 +64,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContent {
-            PaxMentisTheme {
+            val mood by userPreferences.themeMoodFlow.collectAsState()
+            PaxMentisTheme(mood = ThemeMood.fromStored(mood)) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -262,8 +270,9 @@ fun AppNavigation(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             }

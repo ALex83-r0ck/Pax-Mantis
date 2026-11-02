@@ -221,7 +221,7 @@ private fun CrisisPlanWalkthrough(
             Text(
                 "Wenn nichts davon hilft: Bitte ruf jetzt eine der Nummern unten an. Du musst da nicht allein durch.",
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }

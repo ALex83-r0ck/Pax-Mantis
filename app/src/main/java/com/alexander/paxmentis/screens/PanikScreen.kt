@@ -60,7 +60,7 @@ fun PanicScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                         MaterialTheme.colorScheme.background
                     )
                 )
@@ -78,7 +78,7 @@ fun PanicScreen(
                 text = "Notfallhilfe",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(32.dp))

@@ -36,6 +36,15 @@ class UserPreferences internal constructor(
     private val _emergencyNumber = MutableStateFlow(getEmergencyNumber())
     val emergencyNumberFlow: StateFlow<String> = _emergencyNumber.asStateFlow()
 
+    // Name einer ThemeMood; leer = Standard. Hier nur als Text, damit data/ nicht von ui/ abhängt.
+    private val _themeMood = MutableStateFlow(sharedPreferences.getString(KEY_THEME_MOOD, "") ?: "")
+    val themeMoodFlow: StateFlow<String> = _themeMood.asStateFlow()
+
+    fun setThemeMood(mood: String) {
+        sharedPreferences.edit().putString(KEY_THEME_MOOD, mood).apply()
+        _themeMood.value = mood
+    }
+
     fun getNickname(): String {
         return sharedPreferences.getString(KEY_NICKNAME, "Mäusel") ?: "Mäusel"
     }
@@ -91,6 +100,7 @@ class UserPreferences internal constructor(
         const val KEY_NICKNAME = "nickname"
         const val KEY_EMERGENCY_CONTACT = "emergency_contact"
         const val KEY_EMERGENCY_NUMBER = "emergency_number"
+        const val KEY_THEME_MOOD = "theme_mood"
         const val KEY_INTERIM_IMPORTED = "interim_settings_imported"
         const val LEGACY_PLACEHOLDER_NUMBER = "+49123456789"
         val IMPORTED_KEYS = listOf(KEY_NICKNAME, KEY_EMERGENCY_CONTACT, KEY_EMERGENCY_NUMBER)

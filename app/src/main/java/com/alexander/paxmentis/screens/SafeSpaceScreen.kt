@@ -43,8 +43,8 @@ fun SafeSpaceScreen() {
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFE3F2FD),
-                        Color(0xFFBBDEFB)
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.background
                     )
                 )
             ),
@@ -85,8 +85,7 @@ fun SafeSpaceScreen() {
                     fontSize = 18.sp,
                     textAlign = TextAlign.Center,
                     lineHeight = 28.sp,
-                    // Fester Hintergrund (hellblau) -> feste dunkle Schrift statt Theme-Farbe.
-                    color = Color(0xFF1A2B3C)
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 
                 Spacer(modifier = Modifier.height(40.dp))

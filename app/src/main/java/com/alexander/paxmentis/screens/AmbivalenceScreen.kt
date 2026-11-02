@@ -60,7 +60,7 @@ fun AmbivalenceScreen(
             // CRISIS LOCK MODE
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
                 elevation = CardDefaults.cardElevation(8.dp)
             ) {
                 Column(
@@ -85,14 +85,10 @@ fun AmbivalenceScreen(
                     Text(
                         "WIR TREFFEN DIESE ENTSCHEIDUNG ERST IN 24 STUNDEN.",
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error
+                        textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = { isLocked = false },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
+                    Button(onClick = { isLocked = false }) {
                         Text("Ich bin jetzt ruhig (Sperre lösen)")
                     }
                 }

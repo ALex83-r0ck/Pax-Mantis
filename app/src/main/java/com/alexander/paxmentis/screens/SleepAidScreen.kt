@@ -152,7 +152,7 @@ fun SleepAidScreen() {
                         onClick = { isMeditating = !isMeditating },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isMeditating) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            containerColor = if (isMeditating) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                         )
                     ) {
                         Icon(if (isMeditating) Icons.Default.Stop else Icons.Default.PlayArrow, contentDescription = null)

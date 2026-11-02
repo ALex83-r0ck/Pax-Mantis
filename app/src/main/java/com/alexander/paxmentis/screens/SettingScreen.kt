@@ -4,6 +4,16 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import com.alexander.paxmentis.ui.theme.ThemeMood
+import com.alexander.paxmentis.ui.theme.colorSchemeFor
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -29,6 +39,7 @@ fun SettingsScreen(
     val nickname by viewModel.nickname.collectAsState()
     val emergencyContact by viewModel.emergencyContact.collectAsState()
     val emergencyNumber by viewModel.emergencyNumber.collectAsState()
+    val themeMood by viewModel.themeMood.collectAsState()
     val context = LocalContext.current
     val versionName = remember {
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
@@ -58,16 +69,35 @@ fun SettingsScreen(
                     label = { Text("Dein Name / Spitzname") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Text("Farbstimmung", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    ThemeMood.entries.forEach { mood ->
+                        MoodSwatch(mood, selected = mood == themeMood, onClick = { viewModel.setThemeMood(mood) })
+                    }
+                }
+                Text(
+                    "Hell oder dunkel richtet sich nach deinem Handy.",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
         // Notfallkontakt
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Notfallkontakt", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                Text("Vertrauensperson", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "Wird auf der Startseite, im Notfall-Screen und im Krisenplan direkt zum Anrufen angeboten.",
+                    fontSize = 14.sp
+                )
                 
                 TextField(
                     value = emergencyContact,
@@ -132,6 +162,43 @@ fun SettingsScreen(
             modifier = Modifier.padding(top = 16.dp),
             color = MaterialTheme.colorScheme.outline
         )
+    }
+}
+
+/** Farbkreis einer Stimmung: links helle, rechts dunkle Variante – so sieht man beide Modi. */
+@Composable
+private fun MoodSwatch(mood: ThemeMood, selected: Boolean, onClick: () -> Unit) {
+    val light = colorSchemeFor(mood, dark = false)
+    val dark = colorSchemeFor(mood, dark = true)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.small)
+            .clickable(role = Role.RadioButton, onClick = onClick)
+            .semantics { this.selected = selected }
+            .padding(6.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(52.dp)
+                .clip(CircleShape)
+                .border(
+                    width = if (selected) 3.dp else 1.dp,
+                    color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
+                    shape = CircleShape
+                )
+        ) {
+            Row(Modifier.fillMaxSize()) {
+                Box(Modifier.weight(1f).fillMaxHeight().background(light.primary))
+                Box(Modifier.weight(1f).fillMaxHeight().background(dark.primary))
+            }
+            if (selected) {
+                Icon(Icons.Default.Check, contentDescription = null, tint = light.onPrimary)
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(mood.label, fontSize = 12.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
     }
 }
 

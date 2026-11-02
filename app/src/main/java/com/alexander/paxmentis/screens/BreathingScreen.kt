@@ -154,7 +154,7 @@ fun BreathingScreen() {
             Button(
                 onClick = { isAnimating = !isAnimating },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isAnimating) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    containerColor = if (isAnimating) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(if (isAnimating) "Stop" else "Start", fontSize = 20.sp)

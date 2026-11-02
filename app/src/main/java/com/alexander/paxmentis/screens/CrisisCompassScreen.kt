@@ -57,7 +57,7 @@ fun CrisisCompassScreen(navController: NavController) {
             title = "Suizidgedanken",
             description = "Ich denke daran, mir etwas anzutun.",
             icon = Icons.Default.Favorite,
-            color = MaterialTheme.colorScheme.errorContainer,
+            color = MaterialTheme.colorScheme.primary,
             onClick = { navController.navigate("crisis_plan") }
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -78,7 +78,7 @@ fun CrisisCompassScreen(navController: NavController) {
             title = "Akute Panik / Angst",
             description = "Ich habe Todesangst oder mein Herz rast.",
             icon = Icons.Default.Warning,
-            color = MaterialTheme.colorScheme.errorContainer,
+            color = MaterialTheme.colorScheme.primaryContainer,
             onClick = { navController.navigate("panic") }
         )
 
@@ -88,7 +88,7 @@ fun CrisisCompassScreen(navController: NavController) {
             title = "Impuls / Schwere Wahl",
             description = "Ich will gerade eine radikale Entscheidung treffen.",
             icon = Icons.Default.Lock,
-            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.secondaryContainer,
             onClick = { navController.navigate("ambivalence") }
         )
 
@@ -108,7 +108,7 @@ fun CrisisCompassScreen(navController: NavController) {
             title = "Überforderung / Unsicherheit",
             description = "Ich brauche einen Ort, an dem ich sicher bin.",
             icon = Icons.Default.Home,
-            color = MaterialTheme.colorScheme.primaryContainer,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
             onClick = { navController.navigate("safe_space") }
         )
 
@@ -118,7 +118,7 @@ fun CrisisCompassScreen(navController: NavController) {
             title = "Social Media Drang",
             description = "Ich will mich gerade im Internet verlieren.",
             icon = Icons.Default.Block,
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
             onClick = { navController.navigate("trigger_block") }
         )
 

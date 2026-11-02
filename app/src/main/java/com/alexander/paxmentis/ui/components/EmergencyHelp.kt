@@ -47,8 +47,7 @@ fun EmergencyHelp(
         if (contactNumber.isNotBlank()) {
             Button(
                 onClick = { dial(context, contactNumber) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("${contactName.ifBlank { "Vertrauensperson" }} anrufen", fontSize = 18.sp)
             }
@@ -56,7 +55,7 @@ fun EmergencyHelp(
             Text(
                 "Noch keine Vertrauensperson hinterlegt. Du kannst sie in den Einstellungen eintragen.",
                 fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
